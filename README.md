@@ -1,2 +1,2 @@
-# classification-of-encrypted-traffic
+# Classification of encrypted traffic using deep learning
 This repository contains the code used and developed during a master thesis at DTU Compute in 2018
