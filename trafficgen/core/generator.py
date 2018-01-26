@@ -15,6 +15,8 @@ import shutil       # Used for network copy
 import telnetlib    # Used for telnet traffic
 import urllib3      # Used for http/https
 import paramiko     # Used for ssh + sftp
+urllib3.disable_warnings()
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 class http_gen():
     '''
@@ -45,7 +47,7 @@ class http_gen():
                   http = urllib3.PoolManager()
                   response = http.request('GET', url)
                   logging.getLogger(self.__generator__).debug("Recieved %s bytes from %s",
-                                                              str(len(response.read())),
+                                                              str(len(response.data)),
                                                               url)
 
             except:
