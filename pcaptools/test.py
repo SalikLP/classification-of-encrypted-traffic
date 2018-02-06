@@ -1,9 +1,11 @@
 import utils
 
-filename = '../../Data/netflix-0602_1042.pcap'
+dir = '../../Data/'
+filename = 'netflix-0602_1042'
 
-utils.save_pcap(filename)
+
+utils.save_pcap(dir,filename)
 print("Save done!")
-df = utils.load_h5(filename+'.h5', key=filename.split('.')[0])
+df = utils.load_h5(dir + filename+'.h5', key=filename.split('-')[0])
 print("Load done!")
 print(df.shape)
