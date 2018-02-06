@@ -5,22 +5,26 @@ import time
 import pandas as pd
 
 
-def save_pcap(filename):
-    df = read_pcap(filename)
-    save_dataframe_h5(df, filename)
+def save_pcap(dir, filename):
+    df = read_pcap(dir, filename)
+    save_dataframe_h5(df, dir, filename)
 
 
-def save_dataframe_h5(df, filename):
-    key = filename.split('.')[0]
-    df.to_hdf(filename + '.h5', key=key)
+def save_dataframe_h5(df, dir, filename):
+    key = filename.split('-')[0]
+    df.to_hdf(dir + filename + '.h5', key=key)
 
 
-def read_pcap(filename):
+def read_pcap(dir, filename):
     timeS = time.clock()
     df = pd.DataFrame(columns=['time', 'ip.dst', 'ip.src', 'protocol', 'port.dst', 'port.src', 'payload', 'label'])
     count = 0
     label = filename.split('-')[0]
-    data = rdpcap(filename)
+    print("Read PCAP, label is %s" % label)
+    data = rdpcap(dir + filename + '.pcap')
+    totalPackets = len(data)
+    percentage = int(totalPackets / 100)
+    print("Total packages: %d" % totalPackets)
     timeR = time.clock()
     timeRead = timeR-timeS
     print("Time to read PCAP: "+ str(timeRead))
@@ -39,6 +43,11 @@ def read_pcap(filename):
                 payload = transport_layer.payload.original
                 df.loc[count] = [frametime, dst, src, protocol, dport, sport, payload, label]
                 count += 1
+                if(count%(percentage*5) == 0):
+                    timeT = time.clock()
+                    print(count/percentage, "%% Time spend: %d" % (timeT-timeR))
+                    timeR = timeT
+
     timeE = time.clock()
     totalTime = timeE - timeS
     print("Time to convert PCAP to dataframe: " + str(totalTime))
