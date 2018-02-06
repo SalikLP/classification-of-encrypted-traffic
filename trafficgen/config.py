@@ -25,7 +25,7 @@ class Conf(object):
                     'cat /var/log/messages', 'cat /etc/group', 'cat /etc/mtab']
 
     # urls the http generator will randomly fetch from
-    http_extern = ['http://da.simplesite.com/']
+    https_urls = ['https://www.hardwareonline.dk/', 'https://www.dr.dk/']
     # http_intern = ['http://web.intern.ndsec']
 
     # a number of files that will randomly be used for ftp upload
@@ -57,7 +57,7 @@ class Conf(object):
               # http (extern)
               # ('http_gen', [(12, 0), (12, 30), (5, 0)], [http_extern, 10, 20]),
               # ('http_gen', [(9, 0), (17, 0), (30, 0)], [http_extern, 5, 30]),
-              ('http_gen', [(11, 0), (12, 0), (0, 10)], [http_extern, 2, 5]),
+              ('http_gen', [(12, 0), (13, 0), (0, 10)], [https_urls, 2, 5]),
               # ('http_gen', [(9, 0), (17, 0), (90, 0)], [http_extern, 10, 30]),
               # ('http_gen', [(12, 0), (12, 10), (5, 0)], [http_extern, 15, 20]),
               #
