@@ -1,6 +1,6 @@
 import utils
 
-filename = 'https.pcap'
+filename = '../../Data/netflix-0602_1042.pcap'
 
 utils.save_pcap(filename)
 print("Save done!")
