@@ -149,6 +149,8 @@ def read_data_sets(train_dir,
     payloads = data['payload'].values
     # Converting hex string to list of int... Maybe takes to long?
     payloads = [[int(i, 16) for i in list(x)] for x in payloads]
+    payloads = np.array(payloads)
+    
     if not 0 <= validation_size <= len(payloads):
         raise ValueError(
             'Validation size should be between 0 and {}. Received: {}.'
