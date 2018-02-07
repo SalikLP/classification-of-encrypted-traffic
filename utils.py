@@ -23,8 +23,7 @@ def read_pcap(dir, filename):
     data = rdpcap(dir + filename + '.pcap')
     totalPackets = len(data)
     percentage = int(totalPackets / 100)
-
-
+    # Workaround/speedup for pandas append to dataframe
     frametimes =[]
     dsts = []
     srcs = []
@@ -50,14 +49,23 @@ def read_pcap(dir, filename):
                 protocols.append(transport_layer.name)
                 dports.append(transport_layer.dport)
                 sports.append(transport_layer.sport)
-                payloads.append(transport_layer.payload.original)
+                # hex() converts a bytestring to a string with 2 hex digits for each byte:
+                # https://docs.python.org/3/library/stdtypes.html#bytes.hex
+                payloads.append(transport_layer.payload.original.hex())
                 labels.append(label)
                 if(count%(percentage*5) == 0):
-                    timeT = time.clock()
-                    print(count/percentage, "%% Time spend: %d" % (timeT-timeR))
-                    timeR = timeT
+                    print(str(count/percentage) + '%')
                 count += 1
-    d = {'time':frametimes, 'ip.dst': dsts, 'ip.src': srcs, 'protocol': protocols, 'port.dst':dports, 'port.src':sports, 'payload':payloads, 'label':labels}
+    timeT = time.clock()
+    print("Time spend: %ds" % (timeT-timeR))
+    d = {'time': frametimes,
+         'ip.dst': dsts,
+         'ip.src': srcs,
+         'protocol': protocols,
+         'port.dst': dports,
+         'port.src': sports,
+         'payload': payloads,
+         'label': labels}
     df = pd.DataFrame(data=d)
     timeE = time.clock()
     totalTime = timeE - timeS
@@ -92,8 +100,20 @@ def plotHex(hexvalues, filename):
     if odd:
         hexvalues = np.append(hexvalues,[0])
     canvas = np.reshape(np.array(hexvalues),(size,size))
-    plt.figure(figsize=(4,4))
+    plt.figure(figsize=(4, 4))
     plt.axis('off')
     plt.imshow(canvas, cmap='gray')
     plt.title(filename)
     plt.show()
+
+
+def pad_elements_with_zero(payloads):
+    # Assume max payload to be 1460 bytes but as each byte is now 2 hex digits we take double length
+    max_payload_len = 1460*2
+    # Pad with '0'
+    payloads = [s.ljust(max_payload_len, '0') for s in payloads]
+    return payloads
+
+
+def hash_elements(payloads):
+    return payloads
