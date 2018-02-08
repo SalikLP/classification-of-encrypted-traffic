@@ -17,13 +17,22 @@ def save_dataframe_h5(df, dir, filename):
 
 def read_pcap(dir, filename):
     timeS = time.clock()
-    df = pd.DataFrame(columns=['time', 'ip.dst', 'ip.src', 'protocol', 'port.dst', 'port.src', 'payload', 'label'])
     count = 0
     label = filename.split('-')[0]
     print("Read PCAP, label is %s" % label)
     data = rdpcap(dir + filename + '.pcap')
     totalPackets = len(data)
     percentage = int(totalPackets / 100)
+    # Workaround/speedup for pandas append to dataframe
+    frametimes =[]
+    dsts = []
+    srcs = []
+    protocols = []
+    dports = []
+    sports = []
+    payloads = []
+    labels = []
+
     print("Total packages: %d" % totalPackets)
     timeR = time.clock()
     timeRead = timeR-timeS
@@ -31,23 +40,33 @@ def read_pcap(dir, filename):
     sessions = data.sessions()
     for id, session in sessions.items():
         for packet in session:
-            if IP in packet:
+            if IP in packet and (UDP in packet or TCP in packet):
                 ip_layer = packet[IP]
-                frametime = packet.time
-                dst = ip_layer.dst
-                src = ip_layer.src
+                frametimes.append(packet.time)
+                dsts.append(ip_layer.dst)
+                srcs.append(ip_layer.src)
                 transport_layer = ip_layer.payload
-                protocol = transport_layer.name
-                dport = transport_layer.dport
-                sport = transport_layer.sport
-                payload = transport_layer.payload.original
-                df.loc[count] = [frametime, dst, src, protocol, dport, sport, payload, label]
-                count += 1
+                protocols.append(transport_layer.name)
+                dports.append(transport_layer.dport)
+                sports.append(transport_layer.sport)
+                # hex() converts a bytestring to a string with 2 hex digits for each byte:
+                # https://docs.python.org/3/library/stdtypes.html#bytes.hex
+                payloads.append(transport_layer.payload.original.hex())
+                labels.append(label)
                 if(count%(percentage*5) == 0):
-                    timeT = time.clock()
-                    print(count/percentage, "%% Time spend: %d" % (timeT-timeR))
-                    timeR = timeT
-
+                    print(str(count/percentage) + '%')
+                count += 1
+    timeT = time.clock()
+    print("Time spend: %ds" % (timeT-timeR))
+    d = {'time': frametimes,
+         'ip.dst': dsts,
+         'ip.src': srcs,
+         'protocol': protocols,
+         'port.dst': dports,
+         'port.src': sports,
+         'payload': payloads,
+         'label': labels}
+    df = pd.DataFrame(data=d)
     timeE = time.clock()
     totalTime = timeE - timeS
     print("Time to convert PCAP to dataframe: " + str(totalTime))
@@ -81,8 +100,20 @@ def plotHex(hexvalues, filename):
     if odd:
         hexvalues = np.append(hexvalues,[0])
     canvas = np.reshape(np.array(hexvalues),(size,size))
-    plt.figure(figsize=(4,4))
+    plt.figure(figsize=(4, 4))
     plt.axis('off')
     plt.imshow(canvas, cmap='gray')
     plt.title(filename)
     plt.show()
+
+
+def pad_elements_with_zero(payloads):
+    # Assume max payload to be 1460 bytes but as each byte is now 2 hex digits we take double length
+    max_payload_len = 1460*2
+    # Pad with '0'
+    payloads = [s.ljust(max_payload_len, '0') for s in payloads]
+    return payloads
+
+
+def hash_elements(payloads):
+    return payloads
