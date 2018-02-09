@@ -153,7 +153,7 @@ def read_data_sets(train_dir,
         amount = counts[smallest_class]
         new_data = []
         for v in values:
-            sample = data['label' == v].sample(num_classes=amount)
+            sample = data.loc[data['label'] == v].sample(n=amount)
             new_data.append(sample)
         data = new_data
     data = pd.concat(data)
