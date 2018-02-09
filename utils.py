@@ -42,16 +42,18 @@ def read_pcap(dir, filename):
         for packet in session:
             if IP in packet and (UDP in packet or TCP in packet):
                 ip_layer = packet[IP]
+                transport_layer = ip_layer.payload
+                if type(transport_layer.payload) is NoPayload:
+                    continue
                 frametimes.append(packet.time)
                 dsts.append(ip_layer.dst)
                 srcs.append(ip_layer.src)
-                transport_layer = ip_layer.payload
                 protocols.append(transport_layer.name)
                 dports.append(transport_layer.dport)
                 sports.append(transport_layer.sport)
-                # hex() converts a bytestring to a string with 2 hex digits for each byte:
-                # https://docs.python.org/3/library/stdtypes.html#bytes.hex
-                payloads.append(transport_layer.payload.original.hex())
+                # Save the raw byte string
+                raw_payload = raw(transport_layer.payload)
+                payloads.append(raw_payload)
                 labels.append(label)
                 if(count%(percentage*5) == 0):
                     print(str(count/percentage) + '%')

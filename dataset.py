@@ -2,13 +2,14 @@ import numpy as np
 from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import random_seed
 from tensorflow.contrib.learn.python.learn.datasets import base
-from tensorflow.python.platform import gfile
 import glob
 import os
 import utils
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
+
+_label_encoder = LabelEncoder()
 class DataSet(object):
 
     def __init__(self,
@@ -35,9 +36,9 @@ class DataSet(object):
         self._num_examples = payloads.shape[0]
 
         if dtype == dtypes.float32:
-            # Convert from [0, 15] -> [0.0, 1.0].
+            # Convert from [0, 255] -> [0.0, 1.0].
             payloads = payloads.astype(np.float32)
-            payloads = np.multiply(payloads, 1.0 / 15.0)
+            payloads = np.multiply(payloads, 1.0 / 255.0)
 
         self._payloads = payloads
         self._labels = labels
@@ -121,8 +122,7 @@ def extract_labels(dataframe, one_hot=False, num_classes=10):
     """
     print('Extracting labels', )
     labels = dataframe['label'].values
-    label_encoder = LabelEncoder()
-    labels = label_encoder.fit_transform(labels)
+    labels = _label_encoder.fit_transform(labels)
     if one_hot:
         return dense_to_one_hot(labels, num_classes)
     return labels
@@ -146,11 +146,21 @@ def read_data_sets(train_dir,
     data = data.sample(frac=1).reset_index(drop=True)
     num_classes = len(data['label'].unique())
     labels = extract_labels(data, one_hot=one_hot, num_classes=num_classes)
+
     payloads = data['payload'].values
-    # Converting hex string to list of int... Maybe takes to long?
-    payloads = [[int(i, 16) for i in list(x)] for x in payloads]
-    payloads = np.array(payloads)
-    
+    # array_pl = list(raw_payload) this converts raw bytestring to list of int
+
+    # Converting raw bytestring to np array and pad with zero up to 1460 length
+    tmp_payloads = []
+    for x in payloads:
+        payload = np.zeros(1460, dtype=np.uint8)
+        pl = np.fromstring(x, dtype=np.uint8)
+        payload[:pl.shape[0]] = pl
+        tmp_payloads.append(payload)
+
+    # payloads = [np.fromstring(x) for x in payloads]
+    payloads = np.array(tmp_payloads)
+
     if not 0 <= validation_size <= len(payloads):
         raise ValueError(
             'Validation size should be between 0 and {}. Received: {}.'
@@ -169,3 +179,4 @@ def read_data_sets(train_dir,
     test = DataSet(test_payloads, test_labels, **options)
 
     return base.Datasets(train=train, validation=validation, test=test)
+
