@@ -131,9 +131,10 @@ def extract_labels(dataframe, one_hot=False, num_classes=10):
 def read_data_sets(train_dir,
                    one_hot=False,
                    dtype=dtypes.float32,
-                   validation_size=1000,
-                   test_size=1000,
-                   seed=None):
+                   validation_size=5000,
+                   test_size=10000,
+                   seed=None,
+                   balance_classes=False):
 
     dataframes = []
     for fullname in glob.iglob(train_dir+'*.h5'):
@@ -143,10 +144,21 @@ def read_data_sets(train_dir,
     # create one large dataframe
     data = pd.concat(dataframes)
     # shuffle the dataframe and reset the index
-    data = data.sample(frac=1).reset_index(drop=True)
-    num_classes = len(data['label'].unique())
-    labels = extract_labels(data, one_hot=one_hot, num_classes=num_classes)
 
+    num_classes = len(data['label'].unique())
+
+    if balance_classes:
+        values, counts = np.unique(data['label'], return_counts=True)
+        smallest_class = np.argmin(counts)
+        amount = counts[smallest_class]
+        new_data = []
+        for v in values:
+            sample = data['label' == v].sample(num_classes=amount)
+            new_data.append(sample)
+        data = new_data
+    data = pd.concat(data)
+    data = data.sample(frac=1).reset_index(drop=True)
+    labels = extract_labels(data, one_hot=one_hot, num_classes=num_classes)
     payloads = data['payload'].values
     # array_pl = list(raw_payload) this converts raw bytestring to list of int
 
@@ -161,10 +173,11 @@ def read_data_sets(train_dir,
     # payloads = [np.fromstring(x) for x in payloads]
     payloads = np.array(tmp_payloads)
 
+
     if not 0 <= validation_size <= len(payloads):
         raise ValueError(
             'Validation size should be between 0 and {}. Received: {}.'
-            .format(len(payloads), validation_size))
+                .format(len(payloads), validation_size))
 
     test_payloads = payloads[:test_size]
     test_labels = labels[:test_size]
