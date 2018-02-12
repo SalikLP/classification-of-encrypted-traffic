@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib
 
 
 class ConfusionMatrix:
@@ -20,7 +21,7 @@ class ConfusionMatrix:
             if len(self.class_names) < max_len:
                 self.class_names[idx] = name + " "*(max_len-len(name))
 
-        self.mat = np.zeros((num_classes,num_classes),dtype='int')
+        self.mat = np.zeros((num_classes, num_classes), dtype='int')
 
     def __str__(self):
         # calucate row and column sums
@@ -63,9 +64,9 @@ class ConfusionMatrix:
                 self.mat[targets[i], preds[i]] += 1
 
     def get_errors(self):
-        tp = np.asarray(np.diag(self.mat).flatten(),dtype='float')
-        fn = np.asarray(np.sum(self.mat, axis=1).flatten(),dtype='float') - tp
-        fp = np.asarray(np.sum(self.mat, axis=0).flatten(),dtype='float') - tp
+        tp = np.asarray(np.diag(self.mat).flatten(), dtype='float')
+        fn = np.asarray(np.sum(self.mat, axis=1).flatten(), dtype='float') - tp
+        fp = np.asarray(np.sum(self.mat, axis=0).flatten(), dtype='float') - tp
         tn = np.asarray(np.sum(self.mat)*np.ones(self.n_classes).flatten(),
                         dtype='float') - tp - fn - fp
         return tp, fn, fp, tn

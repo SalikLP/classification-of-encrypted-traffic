@@ -15,11 +15,32 @@ def train_input_fn(features, labels, batch_size):
     return dataset.make_one_shot_iterator().get_next()
 
 
-def ffn_layer(name, inputs, hidden_units, activation=None):
-    """A simple function to create a fully connected layer"""
+def ffn_layer(name, inputs, hidden_units, activation=tf.nn.relu):
+    """Reusable code for making a simple neural net layer.
+
+    It does a matrix multiply, bias add, and then uses relu to nonlinearize.
+    It also sets up name scoping so that the resultant graph is easy to read,
+    and adds a number of summary ops.
+    """
+    input_dim = inputs.get_shape().as_list()[1]
+    # use xavier glorot intitializer as regular uniform dist did not work
+    weight_initializer = tf.contrib.layers.xavier_initializer(uniform=True, seed=None, dtype=tf.float32)
     with tf.variable_scope(name):
-        layer = tf.layers.dense(inputs=inputs, units=hidden_units, activation=activation)
-        return layer
+        # This Variable will hold the state of the weights for the layer
+        with tf.name_scope('weights'):
+            weights = tf.get_variable('W', [input_dim, hidden_units], initializer=weight_initializer)
+            variable_summaries(weights)
+        with tf.name_scope('biases'):
+            biases = tf.get_variable('b', [hidden_units], initializer=tf.zeros_initializer)
+            variable_summaries(biases)
+        with tf.name_scope('Wx_plus_b'):
+            preactivate = tf.matmul(inputs, weights) + biases
+            # tf.summary.histogram('pre_activations', preactivate)
+        activations = activation(preactivate, name='activation')
+        # tf.summary.histogram('activations', activations)
+        return activations
+        # layer = tf.layers.dense(inputs=inputs, units=hidden_units, activation=activation)
+        # return layer
 
 
 def conv_layer_1d(name, inputs, num_filters=1, filter_size=(1,1), strides=1, activation=None):
@@ -57,6 +78,26 @@ def max_pool_layer(inputs, name, pool_size=(1, 1), strides=(1, 1), padding='same
                                         strides=strides,
                                         padding=padding)
         return layer
+
+
+def dropout(inputs, keep_prob=1.0):
+    with tf.name_scope('dropout'):
+        # keep_prob = tf.placeholder(tf.float32)
+        tf.summary.scalar('dropout_keep_probability', keep_prob)
+        return tf.nn.dropout(inputs, keep_prob)
+
+
+def variable_summaries(var):
+  """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
+  with tf.name_scope('summaries'):
+    mean = tf.reduce_mean(var)
+    tf.summary.scalar('mean', mean)
+    with tf.name_scope('stddev'):
+      stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+    tf.summary.scalar('stddev', stddev)
+    tf.summary.scalar('max', tf.reduce_max(var))
+    tf.summary.scalar('min', tf.reduce_min(var))
+    # tf.summary.histogram('histogram', var)
 
 #
 # mnist_data = input_data.read_data_sets('MNIST_data',
