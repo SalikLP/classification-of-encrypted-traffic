@@ -139,7 +139,7 @@ def read_data_sets(train_dir,
     dataframes = []
     for fullname in glob.iglob(train_dir+'*.h5'):
         filename =os.path.basename(fullname)
-        df = utils.load_h5(train_dir + filename, key=filename.split('-')[0])
+        df = utils.load_h5(train_dir, filename)
         dataframes.append(df)
     # create one large dataframe
     data = pd.concat(dataframes)

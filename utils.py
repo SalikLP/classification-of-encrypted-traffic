@@ -12,7 +12,7 @@ def save_pcap(dir, filename):
 
 def save_dataframe_h5(df, dir, filename):
     key = filename.split('-')[0]
-    df.to_hdf(dir + filename + '.h5', key=key)
+    df.to_hdf(dir + filename + '.h5', key=key, mode='w')
 
 
 def read_pcap(dir, filename):
@@ -75,9 +75,9 @@ def read_pcap(dir, filename):
     return df
 
 
-def load_h5(filename, key=''):
+def load_h5(dir, filename):
     timeS = time.clock()
-    df = pd.read_hdf(filename, key=key)
+    df = pd.read_hdf(dir + filename, key=filename.split('-')[0])
     timeE = time.clock()
     loadTime = timeE-timeS
     print("Time to load " + filename + ": " + str(loadTime))
@@ -86,27 +86,30 @@ def load_h5(filename, key=''):
 def plotHex(hexvalues, filename):
     '''
         Plot an example as an image
+        hexvalues: list of byte values
+        average: allows for providing more than one list of hexvalues and create an average over all
     '''
+
     size = 39
-    canvas = np.zeros((size,size))
-    padding = (size*size)-len(hexvalues)
-    #odd = if padding % 2 == 0 false  else true
-    odd = False
-    if padding %2 == 0:
-        odd = False
+    hex_placeholder = [0]*(size*size) #create placeholder of correct size
+
+
+    if(type(hexvalues[0]) is np.ndarray):
+      print("Multiple payloads")
+      for hex_list in hexvalues:
+        hex_placeholder[0:len(hex_list)] += hex_list  # overwrite zero values with values of
+      hex_placeholder = np.array(hex_placeholder)/len(hexvalues) # average the elements of the placeholder
     else:
-        odd = True
-    padding = int(np.floor(padding/2))
-    hexvalues = np.pad(hexvalues,padding,'constant')
-    print(hexvalues)
-    if odd:
-        hexvalues = np.append(hexvalues,[0])
-    canvas = np.reshape(np.array(hexvalues),(size,size))
+      print("Single payload")
+      hex_placeholder[0:len(hexvalues)] = hexvalues #overwrite zero values with values of
+
+    canvas = np.reshape(np.array(hex_placeholder),(size,size))
     plt.figure(figsize=(4, 4))
     plt.axis('off')
     plt.imshow(canvas, cmap='gray')
     plt.title(filename)
     plt.show()
+    return canvas
 
 
 def pad_elements_with_zero(payloads):
