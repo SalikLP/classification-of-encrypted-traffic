@@ -134,7 +134,8 @@ def read_data_sets(train_dir,
                    validation_size=5000,
                    test_size=10000,
                    seed=None,
-                   balance_classes=False):
+                   balance_classes=False,
+                   payload_length=1460):
 
     dataframes = []
     for fullname in glob.iglob(train_dir+'*.h5'):
@@ -165,7 +166,7 @@ def read_data_sets(train_dir,
     # Converting raw bytestring to np array and pad with zero up to 1460 length
     tmp_payloads = []
     for x in payloads:
-        payload = np.zeros(1460, dtype=np.uint8)
+        payload = np.zeros(payload_length, dtype=np.uint8)
         pl = np.fromstring(x, dtype=np.uint8)
         payload[:pl.shape[0]] = pl
         tmp_payloads.append(payload)

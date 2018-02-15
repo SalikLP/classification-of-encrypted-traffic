@@ -123,3 +123,24 @@ def pad_elements_with_zero(payloads):
 def hash_elements(payloads):
     return payloads
 
+def plotNNFilter(units):
+    filters = units.shape[3]
+    plt.figure(1, figsize=(20, 20))
+    n_columns = 6
+    n_rows = math.ceil(filters / n_columns) + 1
+    for i in range(filters):
+        plt.subplot(n_rows, n_columns, i+1)
+        plt.title('Filter ' + str(i))
+        plt.imshow(units[0, :, :, i], interpolation="nearest", cmap="gray")
+
+
+def packetAnonymizer(packet):
+    p = np.fromstring(packet, dtype=np.uint8)
+    # set MACs to 0
+    p[0:12] = 0
+    # set IPs to 0
+    p[26:34] = 0
+    # set ports to 0
+    p[34:36] = 0
+    p[36:38] = 0
+    return p
