@@ -116,9 +116,6 @@ def extract_labels(dataframe, one_hot=False, num_classes=10):
 
     Returns:
     labels: a 1D uint8 numpy array.
-
-    Raises:
-    ValueError: If the bystream doesn't start with 2049.
     """
     print('Extracting labels', )
     labels = dataframe['label'].values
@@ -131,20 +128,50 @@ def extract_labels(dataframe, one_hot=False, num_classes=10):
 def read_data_sets(train_dir,
                    one_hot=False,
                    dtype=dtypes.float32,
-                   validation_size=5000,
-                   test_size=10000,
+                   validation_size=0.2,
+                   test_size=0.2,
                    seed=None,
                    balance_classes=False,
                    payload_length=1460):
 
     dataframes = []
-    for fullname in glob.iglob(train_dir+'*.h5'):
-        filename =os.path.basename(fullname)
+    for fullname in glob.iglob(train_dir + '*.h5'):
+        filename = os.path.basename(fullname)
         df = utils.load_h5(train_dir, filename)
         dataframes.append(df)
     # create one large dataframe
     data = pd.concat(dataframes)
-    # shuffle the dataframe and reset the index
+
+    # groupby session/flow orderby time
+    group_by = data.sort_values(['time']).groupby(['ip.dst', 'ip.src', 'port.dst', 'port.src'])
+    gb_dict = dict(list(group_by))
+    data_points = []
+    labels = []
+    for k, v in gb_dict.items():
+        # v is a DataFrame
+        if len(v) < 15:
+            continue
+        packets = v['bytes'].values[:15]
+        headers = []
+        for i in range(15):
+            p = packets[i]
+            p_an = utils.packetAnonymizer(p)
+            protocol = v['protocol'].iloc[0]
+            # Extract headers (TCP = 54 Bytes, UDP = 42 Bytes - Maybe + 4 Bytes for VLAN tagging) from x first packets of session/flow
+            if protocol == 'TCP':
+                #TCP
+                header = p_an[:58]
+            else:
+                # UDP
+                header = p_an[:46]
+            headers.append(header)
+        # Concatenate headers as the feature vector
+        feature_vector = np.concatenate(headers).ravel()
+        data_points.append(feature_vector)
+        labels.append(v['label'].iloc[0])
+    d = {'bytes': data_points, 'label': labels}
+    # convert back to DataFrame
+    data = pd.DataFrame(data=d)
 
     num_classes = len(data['label'].unique())
 
@@ -157,18 +184,20 @@ def read_data_sets(train_dir,
             sample = data.loc[data['label'] == v].sample(n=amount)
             new_data.append(sample)
         data = new_data
-    data = pd.concat(data)
+        data = pd.concat(data)
+
+    # shuffle the dataframe and reset the index
     data = data.sample(frac=1).reset_index(drop=True)
     labels = extract_labels(data, one_hot=one_hot, num_classes=num_classes)
-    payloads = data['payload'].values
+    payloads = data['bytes'].values
     # array_pl = list(raw_payload) this converts raw bytestring to list of int
 
-    # Converting raw bytestring to np array and pad with zero up to 1460 length
+    # pad with zero up to payload_length length
     tmp_payloads = []
     for x in payloads:
         payload = np.zeros(payload_length, dtype=np.uint8)
-        pl = np.fromstring(x, dtype=np.uint8)
-        payload[:pl.shape[0]] = pl
+        # pl = np.fromstring(x, dtype=np.uint8)
+        payload[:x.shape[0]] = x
         tmp_payloads.append(payload)
 
     # payloads = [np.fromstring(x) for x in payloads]
@@ -179,13 +208,17 @@ def read_data_sets(train_dir,
         raise ValueError(
             'Validation size should be between 0 and {}. Received: {}.'
                 .format(len(payloads), validation_size))
+    # TODO make seperate TEST SET ONCE ready
+    total_length = len(payloads)
+    test_amount = int(total_length*test_size)
 
-    test_payloads = payloads[:test_size]
-    test_labels = labels[:test_size]
-    val_payloads = payloads[test_size:(validation_size+test_size)]
-    val_labels = labels[test_size:(validation_size+test_size)]
-    train_payloads = payloads[(validation_size+test_size):]
-    train_labels = labels[(validation_size+test_size):]
+    validation_amount = int(total_length*validation_size)
+    test_payloads = payloads[:test_amount]
+    test_labels = labels[:test_amount]
+    val_payloads = payloads[test_size:(validation_amount+test_amount)]
+    val_labels = labels[test_size:(validation_amount+test_amount)]
+    train_payloads = payloads[(validation_amount+test_amount):]
+    train_labels = labels[(validation_amount+test_amount):]
     options = dict(dtype=dtype, seed=seed)
 
     train = DataSet(train_payloads, train_labels, **options)
