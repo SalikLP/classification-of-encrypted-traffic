@@ -16,7 +16,7 @@ def save_dataframe_h5(df, dir, filename):
 
 
 def read_pcap(dir, filename):
-    timeS = time.clock()
+    time_s = time.clock()
     count = 0
     label = filename.split('-')[0]
     print("Read PCAP, label is %s" % label)
@@ -30,21 +30,19 @@ def read_pcap(dir, filename):
     protocols = []
     dports = []
     sports = []
-    payloads = []
+    bytes = []
     labels = []
 
     print("Total packages: %d" % totalPackets)
-    timeR = time.clock()
-    timeRead = timeR-timeS
-    print("Time to read PCAP: "+ str(timeRead))
+    time_r = time.clock()
+    time_read = time_r-time_s
+    print("Time to read PCAP: "+ str(time_read))
     sessions = data.sessions()
     for id, session in sessions.items():
         for packet in session:
             if IP in packet and (UDP in packet or TCP in packet):
                 ip_layer = packet[IP]
                 transport_layer = ip_layer.payload
-                if type(transport_layer.payload) is NoPayload:
-                    continue
                 frametimes.append(packet.time)
                 dsts.append(ip_layer.dst)
                 srcs.append(ip_layer.src)
@@ -52,26 +50,26 @@ def read_pcap(dir, filename):
                 dports.append(transport_layer.dport)
                 sports.append(transport_layer.sport)
                 # Save the raw byte string
-                raw_payload = raw(transport_layer.payload)
-                payloads.append(raw_payload)
+                raw_payload = raw(packet)
+                bytes.append(raw_payload)
                 labels.append(label)
                 if(count%(percentage*5) == 0):
                     print(str(count/percentage) + '%')
                 count += 1
-    timeT = time.clock()
-    print("Time spend: %ds" % (timeT-timeR))
+    time_t = time.clock()
+    print("Time spend: %ds" % (time_t-time_r))
     d = {'time': frametimes,
          'ip.dst': dsts,
          'ip.src': srcs,
          'protocol': protocols,
          'port.dst': dports,
          'port.src': sports,
-         'payload': payloads,
+         'bytes': bytes,
          'label': labels}
     df = pd.DataFrame(data=d)
-    timeE = time.clock()
-    totalTime = timeE - timeS
-    print("Time to convert PCAP to dataframe: " + str(totalTime))
+    time_e = time.clock()
+    total_time = time_e - time_s
+    print("Time to convert PCAP to dataframe: " + str(total_time))
     return df
 
 
@@ -123,3 +121,25 @@ def pad_elements_with_zero(payloads):
 def hash_elements(payloads):
     return payloads
 
+def plotNNFilter(units):
+    filters = units.shape[3]
+    plt.figure(1, figsize=(20, 20))
+    n_columns = 6
+    n_rows = math.ceil(filters / n_columns) + 1
+    for i in range(filters):
+        plt.subplot(n_rows, n_columns, i+1)
+        plt.title('Filter ' + str(i))
+        plt.imshow(units[0, :, :, i], interpolation="nearest", cmap="gray")
+
+
+def packetAnonymizer(packet):
+    # Should work with TCP and UDP
+    p = np.fromstring(packet, dtype=np.uint8)
+    # set MACs to 0
+    p[0:12] = 0
+    # set IPs to 0
+    p[26:34] = 0
+    # set ports to 0
+    p[34:36] = 0
+    p[36:38] = 0
+    return p

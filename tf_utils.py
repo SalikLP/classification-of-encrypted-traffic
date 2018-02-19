@@ -29,10 +29,10 @@ def ffn_layer(name, inputs, hidden_units, activation=tf.nn.relu):
         # This Variable will hold the state of the weights for the layer
         with tf.name_scope('weights'):
             weights = tf.get_variable('W', [input_dim, hidden_units], initializer=weight_initializer)
-            variable_summaries(weights)
+            # variable_summaries(weights)
         with tf.name_scope('biases'):
             biases = tf.get_variable('b', [hidden_units], initializer=tf.zeros_initializer)
-            variable_summaries(biases)
+            # variable_summaries(biases)
         with tf.name_scope('Wx_plus_b'):
             preactivate = tf.matmul(inputs, weights) + biases
             # tf.summary.histogram('pre_activations', preactivate)
