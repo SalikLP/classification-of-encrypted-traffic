@@ -73,6 +73,90 @@ def read_pcap(dir, filename):
     return df
 
 
+def filter_pcap_by_ip(dir, filename, ip_list, label):
+    time_s = time.clock()
+    count = 0
+    print("Read PCAP, label is %s" % label)
+    data = rdpcap(dir + filename + '.pcap')
+    totalPackets = len(data)
+    percentage = int(totalPackets / 100)
+    # Workaround/speedup for pandas append to dataframe
+    frametimes =[]
+    dsts = []
+    srcs = []
+    protocols = []
+    dports = []
+    sports = []
+    bytes = []
+    labels = []
+
+    print("Total packages: %d" % totalPackets)
+    time_r = time.clock()
+    time_read = time_r-time_s
+    print("Time to read PCAP: "+ str(time_read))
+    for packet in data:
+        if IP in packet and \
+                (UDP in packet or TCP in packet) and \
+                (packet[IP].dst in ip_list or packet[IP].src in ip_list):
+            ip_layer = packet[IP]
+            transport_layer = ip_layer.payload
+            frametimes.append(packet.time)
+            dsts.append(ip_layer.dst)
+            srcs.append(ip_layer.src)
+            protocols.append(transport_layer.name)
+            dports.append(transport_layer.dport)
+            sports.append(transport_layer.sport)
+            # Save the raw byte string
+            raw_payload = raw(packet)
+            bytes.append(raw_payload)
+            labels.append(label)
+            if(count%(percentage*5) == 0):
+                print(str(count/percentage) + '%')
+            count += 1
+    time_t = time.clock()
+    print("Time spend: %ds" % (time_t-time_r))
+    d = {'time': frametimes,
+         'ip.dst': dsts,
+         'ip.src': srcs,
+         'protocol': protocols,
+         'port.dst': dports,
+         'port.src': sports,
+         'bytes': bytes,
+         'label': labels}
+    df = pd.DataFrame(data=d)
+    time_e = time.clock()
+    total_time = time_e - time_s
+    print("Time to convert PCAP to dataframe: " + str(total_time))
+    return df
+
+
+def session_extractor(p):
+    sess = "Other"
+    if 'Ether' in p:
+        if 'IP' in p:
+            src = p[IP].src
+            dst = p[IP].dst
+            if 'TCP' in p:
+                if src.startswith('10.'):
+                    sess = p.sprintf("TCP %IP.src%:%r,TCP.sport% > %IP.dst%:%r,TCP.dport%")
+                elif dst.startswith('10.'):
+                    sess = p.sprintf("TCP %IP.dst%:%r,TCP.dport% > %IP.src%:%r,TCP.sport%")
+            elif 'UDP' in p:
+                if src.startswith('10.'):
+                    sess = p.sprintf("UDP %IP.src%:%r,UDP.sport% > %IP.dst%:%r,UDP.dport%")
+                elif dst.startswith('10.'):
+                    sess = p.sprintf("UDP %IP.dst%:%r,UDP.dport% > %IP.src%:%r,UDP.sport%")
+            elif 'ICMP' in p:
+                sess = p.sprintf("ICMP %IP.src% > %IP.dst% type=%r,ICMP.type% code=%r,ICMP.code% id=%ICMP.id%")
+            else:
+                sess = p.sprintf("IP %IP.src% > %IP.dst% proto=%IP.proto%")
+        elif 'ARP' in p:
+            sess = p.sprintf("ARP %ARP.psrc% > %ARP.pdst%")
+        else:
+            sess = p.sprintf("Ethernet type=%04xr,Ether.type%")
+    return sess
+
+
 def load_h5(dir, filename):
     timeS = time.clock()
     df = pd.read_hdf(dir + filename, key=filename.split('-')[0])

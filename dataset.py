@@ -132,7 +132,9 @@ def read_data_sets(train_dir,
                    test_size=0.2,
                    seed=None,
                    balance_classes=False,
-                   payload_length=1460):
+                   payload_length=1460,
+                   num_headers=15,
+                   session=True):
 
     dataframes = []
     for fullname in glob.iglob(train_dir + '*.h5'):
@@ -147,23 +149,35 @@ def read_data_sets(train_dir,
     gb_dict = dict(list(group_by))
     data_points = []
     labels = []
+    done = set()
+    num_too_short = 0
     for k, v in gb_dict.items():
         # v is a DataFrame
-        if len(v) < 15:
+        # k is a tuple (src, dst, sport, dport)
+        if k in done:
             continue
-        packets = v['bytes'].values[:15]
+        done.add(k)
+        if session:
+            other_direction_key = (k[1], k[0], k[3], k[2])
+            other_direction = gb_dict[other_direction_key]
+            v = pd.concat([v, other_direction]).sort_values(['time'])
+            done.add(other_direction_key)
+        if len(v) < num_headers:
+            num_too_short += 1
+            continue
+        packets = v['bytes'].values[:num_headers]
         headers = []
-        for i in range(15):
+        for i in range(num_headers):
             p = packets[i]
             p_an = utils.packetAnonymizer(p)
             protocol = v['protocol'].iloc[0]
             # Extract headers (TCP = 54 Bytes, UDP = 42 Bytes - Maybe + 4 Bytes for VLAN tagging) from x first packets of session/flow
             if protocol == 'TCP':
                 #TCP
-                header = p_an[:58]
+                header = p_an[:54]
             else:
                 # UDP
-                header = p_an[:46]
+                header = p_an[:42]
             headers.append(header)
         # Concatenate headers as the feature vector
         feature_vector = np.concatenate(headers).ravel()
@@ -215,8 +229,8 @@ def read_data_sets(train_dir,
     validation_amount = int(total_length*validation_size)
     test_payloads = payloads[:test_amount]
     test_labels = labels[:test_amount]
-    val_payloads = payloads[test_size:(validation_amount+test_amount)]
-    val_labels = labels[test_size:(validation_amount+test_amount)]
+    val_payloads = payloads[test_amount:(validation_amount+test_amount)]
+    val_labels = labels[test_amount:(validation_amount+test_amount)]
     train_payloads = payloads[(validation_amount+test_amount):]
     train_labels = labels[(validation_amount+test_amount):]
     options = dict(dtype=dtype, seed=seed)
