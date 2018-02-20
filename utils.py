@@ -130,6 +130,33 @@ def filter_pcap_by_ip(dir, filename, ip_list, label):
     return df
 
 
+def session_extractor(p):
+    sess = "Other"
+    if 'Ether' in p:
+        if 'IP' in p:
+            src = p[IP].src
+            dst = p[IP].dst
+            if 'TCP' in p:
+                if src.startswith('10.'):
+                    sess = p.sprintf("TCP %IP.src%:%r,TCP.sport% > %IP.dst%:%r,TCP.dport%")
+                elif dst.startswith('10.'):
+                    sess = p.sprintf("TCP %IP.dst%:%r,TCP.dport% > %IP.src%:%r,TCP.sport%")
+            elif 'UDP' in p:
+                if src.startswith('10.'):
+                    sess = p.sprintf("UDP %IP.src%:%r,UDP.sport% > %IP.dst%:%r,UDP.dport%")
+                elif dst.startswith('10.'):
+                    sess = p.sprintf("UDP %IP.dst%:%r,UDP.dport% > %IP.src%:%r,UDP.sport%")
+            elif 'ICMP' in p:
+                sess = p.sprintf("ICMP %IP.src% > %IP.dst% type=%r,ICMP.type% code=%r,ICMP.code% id=%ICMP.id%")
+            else:
+                sess = p.sprintf("IP %IP.src% > %IP.dst% proto=%IP.proto%")
+        elif 'ARP' in p:
+            sess = p.sprintf("ARP %ARP.psrc% > %ARP.pdst%")
+        else:
+            sess = p.sprintf("Ethernet type=%04xr,Ether.type%")
+    return sess
+
+
 def load_h5(dir, filename):
     timeS = time.clock()
     df = pd.read_hdf(dir + filename, key=filename.split('-')[0])
