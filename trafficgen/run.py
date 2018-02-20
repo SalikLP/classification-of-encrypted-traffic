@@ -33,7 +33,7 @@ if __name__ == '__main__':
     # set hostbased parameters
     hostname = platform.node()
     
-    log_file = 'trafficgen/logs/' + hostname + '.log'
+    log_file = 'logs/' + hostname + '.log'
     config_file = "config.py"
     # file = open(log_file, 'a+')
     # file.close()
