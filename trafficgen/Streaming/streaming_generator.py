@@ -17,10 +17,7 @@ import hbonordic_gen as hbo
 import netflix_gen as netflix
 import youtube_gen as youtube
 
-
-
 def notifySlack(message):
-    slack_token = "xoxp-293516421953-294177990549-318003849223-df8cf2c41f0167d74cc779a09edf450b"
     sc = SlackClient(slack_token)
     try:
         sc.api_call("chat.postMessage", channel="#server", text=message)
@@ -30,7 +27,7 @@ def notifySlack(message):
 def generate_streaming(duration):
     # Open the chrome webdriver
     dir = '/home/mclrn/Data'
-    #TODO: These could be done with while loops (while dr < 100: streamDR) then we could sorround each with a try/catch and thereby only increment the counter if the streaming is successful
+
     dr_counter = 0
     while dr_counter < 100:
         browser = webdriver.Chrome()
@@ -49,6 +46,7 @@ def generate_streaming(duration):
             cap.cleanup(file) # Cleanup by deleting the pcap file
             browser.close() # Close the browser
             notifySlack("Something went wrong while streaming \n %s" % traceback.format_exc())
+        browser.quit()
 
     netflix_counter = 0
     while netflix_counter < 100:
@@ -68,6 +66,7 @@ def generate_streaming(duration):
             cap.cleanup(file)  # Cleanup by deleting the pcap file
             browser.close()  # Close the browser
             notifySlack("Something went wrong while streaming \n %s" % traceback.format_exc())
+        browser.quit()
 
     youtube_counter = 0
     while youtube_counter < 100:
@@ -87,6 +86,7 @@ def generate_streaming(duration):
             cap.cleanup(file)  # Cleanup by deleting the pcap file
             browser.close()  # Close the browser
             notifySlack("Something went wrong while streaming \n %s" % traceback.format_exc())
+        browser.quit()
 
     hbo_counter = 0
     while hbo_counter < 100:
@@ -106,60 +106,91 @@ def generate_streaming(duration):
             cap.cleanup(file)  # Cleanup by deleting the pcap file
             browser.close()  # Close the browser
             notifySlack("Something went wrong while streaming \n %s" % traceback.format_exc())
+        browser.quit()
+
     notifySlack("Streaming has completed")
-'''
-    try:
-        for i in range(10): # This forloop is to make easy printing of the progress
-            for j in range(5):
-                browser = webdriver.Chrome(options=options)
-                _thread.start_new_thread(captureTraffic, (1, duration, '/home/mclrn/Data', "drtv"))
-                dr.streamVideo(browser, duration)
+
+
+def generate_streaming_multithread(duration):
+    total_iterations = 100
+    iterations = 0
+    dir = '/home/mclrn/Data'
+    while iterations < total_iterations:
+
+        #### DRTV STREAMING ####
+        # Create filename
+        now = datetime.datetime.now()
+        file = dir + "/%s-%.2d%.2d_%.2d%.2d.pcap" % ("drtv", now.day, now.month, now.hour, now.minute)
+        # Instantiate thread
+        capture_dr_thread = Thread(target=cap.captureTraffic, args=(1, duration, dir, file))
+
+        # Create five threads for streaming DR
+        streaming_threads = []
+        browsers = []
+
+        browser1 = webdriver.Chrome()
+        browsers.append(browser1)
+        dr1 = Thread(target=dr.streamVideo, args=(browser1,duration))
+        streaming_threads.append(dr1)
+
+        browser2 = webdriver.Chrome()
+        browsers.append(browser2)
+        dr2 = Thread(target=dr.streamVideo, args=(browser2, duration))
+        streaming_threads.append(dr2)
+
+        browser3 = webdriver.Chrome()
+        browsers.append(browser3)
+        dr3 = Thread(target=dr.streamVideo, args=(browser3, duration))
+        streaming_threads.append(dr3)
+
+        browser4 = webdriver.Chrome()
+        browsers.append(browser4)
+        dr4 = Thread(target=dr.streamVideo, args=(browser4, duration))
+        streaming_threads.append(dr4)
+
+        browser5 = webdriver.Chrome()
+        browsers.append(browser5)
+        dr5 = Thread(target=dr.streamVideo, args=(browser5, duration))
+        streaming_threads.append(dr5)
+
+        try:
+            capture_dr_thread.start()
+            for thread in streaming_threads:
+                # Start streaming threads
+                thread.start()
+
+            for thread in streaming_threads:
+                # Wait until all threads have joined
+                thread.join()
+
+            for browser in browsers:
                 browser.close()
 
-                browser = webdriver.Chrome(options=options)
-                _thread.start_new_thread(captureTraffic, (1, duration, '/home/mclrn/Data', "netflix"))
-                netflix.streamVideo(browser, duration, netflixuser, netflixpassword)
+        except Exception as e:
+            for thread in streaming_threads:
+                # Wait for all threads
+                thread.join()
+            # Wait for capture thread
+            capture_dr_thread.join()
+            cap.cleanup(file)
+            for browser in browsers:
                 browser.close()
-                # TODO: The hbo streaming can only be generated if we run in non-headless mode on the server. Find out how we can do that, it currently throws an error.
-                
-                
-                browser = webdriver.Chrome(options=options)
-                _thread.start_new_thread(captureTraffic, (1, duration, '/home/mclrn/Data', "hbo"))
-                hbo.streamVideo(browser, duration,hbouser,hbopassword)
-                browser.close()
-            
-                
-                browser = webdriver.Chrome(options=options)
-                _thread.start_new_thread(captureTraffic, (1, duration, '/home/mclrn/Data', "youtube"))
-                youtube.streamVideo(browser, duration)
-                browser.close()
-            notifySlack("Streaming generation is %d0%% done" % (i+1))
-    except Exception as e:
-        #TODO: Maybe we can do some cleanup, remove the pcap file that was created. We might also try to restart the process in some way.
-        notifySlack("Something went wrong while streaming \n %s" % traceback.format_exc())
-    
-
-'''
-
-
-
-
-
-
-
-
-
+            notifySlack("Something went wrong %s" % traceback.format_exc())
+        for browser in browsers:
+            browser.quit()
 
 
 
 if __name__ == "__main__":
+
+    '''
     netflixuser = os.environ["netflixuser"]
     netflixpassword = os.environ["netflixpassword"]
 
-
     hbouser = os.environ["hbouser"]
     hbopassword = os.environ["hbopassword"]
-
+    '''
     # Specify duration in seconds
-    duration = 60 * 2
-    generate_streaming(duration)
+    duration = 60 * 1
+    #generate_streaming(duration)
+    generate_streaming_multithread(duration)
