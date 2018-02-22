@@ -115,73 +115,115 @@ def generate_streaming_multithread(duration):
     total_iterations = 100
     iterations = 0
     dir = '/home/mclrn/Data'
+
+    streaming_threads = []
+    browsers = []
+    file = " "
     while iterations < total_iterations:
 
-        #### DRTV STREAMING ####
-        # Create filename
-        now = datetime.datetime.now()
-        file = dir + "/%s-%.2d%.2d_%.2d%.2d.pcap" % ("drtv", now.day, now.month, now.hour, now.minute)
-        # Instantiate thread
-        capture_dr_thread = Thread(target=cap.captureTraffic, args=(1, duration, dir, file))
-
-        # Create five threads for streaming DR
-        streaming_threads = []
-        browsers = []
-
-        browser1 = webdriver.Chrome()
-        browsers.append(browser1)
-        dr1 = Thread(target=dr.streamVideo, args=(browser1,duration))
-        streaming_threads.append(dr1)
-
-        browser2 = webdriver.Chrome()
-        browsers.append(browser2)
-        dr2 = Thread(target=dr.streamVideo, args=(browser2, duration))
-        streaming_threads.append(dr2)
-
-        browser3 = webdriver.Chrome()
-        browsers.append(browser3)
-        dr3 = Thread(target=dr.streamVideo, args=(browser3, duration))
-        streaming_threads.append(dr3)
-
-        browser4 = webdriver.Chrome()
-        browsers.append(browser4)
-        dr4 = Thread(target=dr.streamVideo, args=(browser4, duration))
-        streaming_threads.append(dr4)
-
-        browser5 = webdriver.Chrome()
-        browsers.append(browser5)
-        dr5 = Thread(target=dr.streamVideo, args=(browser5, duration))
-        streaming_threads.append(dr5)
+        try:
+            if iterations % 2 == 0:
+                browsers, capture_thread, file, streaming_threads = generate_multithreaded_dr_streaming(dir, duration)
+            else:
+                browsers, capture_thread, file, streaming_threads = generate_multithreaded_youtube_streaming(dir, duration)
+        except Exception as ex:
+            notifySlack("Something went wrong when setting up the threads \n %s" % traceback.format_exc())
 
         try:
-            capture_dr_thread.start()
+            capture_thread.start()
             for thread in streaming_threads:
                 # Start streaming threads
                 thread.start()
-
-            for thread in streaming_threads:
-                # Wait until all threads have joined
-                thread.join()
-
+            print("streaming started")
+            capture_thread.join() # Stream until the capture thread joins
+            print("capture done - thread has joined")
             for browser in browsers:
                 browser.close()
 
         except Exception as e:
-            for thread in streaming_threads:
-                # Wait for all threads
-                thread.join()
+            notifySlack("Something went wrong %s" % traceback.format_exc())
             # Wait for capture thread
-            capture_dr_thread.join()
+            capture_thread.join()
+            # Do a cleanup since somthing went wrong
             cap.cleanup(file)
             for browser in browsers:
                 browser.close()
-            notifySlack("Something went wrong %s" % traceback.format_exc())
         for browser in browsers:
             browser.quit()
+        iterations+=1
+
+def generate_multithreaded_dr_streaming(dir, duration):
+    #### DRTV STREAMING ####
+    # Create filename
+    now = datetime.datetime.now()
+    file = dir + "/%s-%.2d%.2d_%.2d%.2d.pcap" % ("drtv", now.day, now.month, now.hour, now.minute)
+    # Instantiate thread
+    capture_dr_thread = Thread(target=cap.captureTraffic, args=(1, duration, dir, file))
+    # Create five threads for streaming DR
+    streaming_threads = []
+    browsers = []
+    browser1 = webdriver.Chrome()
+    browsers.append(browser1)
+    dr1 = Thread(target=dr.streamVideo, args=(browser1, duration))
+    streaming_threads.append(dr1)
+    browser2 = webdriver.Chrome()
+    browsers.append(browser2)
+    dr2 = Thread(target=dr.streamVideo, args=(browser2, duration))
+    streaming_threads.append(dr2)
+    browser3 = webdriver.Chrome()
+    browsers.append(browser3)
+    dr3 = Thread(target=dr.streamVideo, args=(browser3, duration))
+    streaming_threads.append(dr3)
+    browser4 = webdriver.Chrome()
+    browsers.append(browser4)
+    dr4 = Thread(target=dr.streamVideo, args=(browser4, duration))
+    streaming_threads.append(dr4)
+    browser5 = webdriver.Chrome()
+    browsers.append(browser5)
+    dr5 = Thread(target=dr.streamVideo, args=(browser5, duration))
+    streaming_threads.append(dr5)
+    return browsers, capture_dr_thread, file, streaming_threads
+
+
+def generate_multithreaded_youtube_streaming(dir, duration):
+    #### YOUTUBE STREAMING ####
+    # Create filename
+    now = datetime.datetime.now()
+    file = dir + "/%s-%.2d%.2d_%.2d%.2d.pcap" % ("youtube", now.day, now.month, now.hour, now.minute)
+    # Instantiate thread
+    capture_youtube_thread = Thread(target=cap.captureTraffic, args=(1, duration, dir, file))
+    # Create five threads for streaming youtube
+    streaming_threads = []
+    browsers = []
+    browser1 = webdriver.Chrome()
+    browsers.append(browser1)
+    youtube1 = Thread(target=youtube.streamVideo, args=(browser1, duration))
+    streaming_threads.append(youtube1)
+    browser2 = webdriver.Chrome()
+    browsers.append(browser2)
+    youtube2 = Thread(target=youtube.streamVideo, args=(browser2, duration))
+    streaming_threads.append(youtube2)
+    browser3 = webdriver.Chrome()
+    browsers.append(browser3)
+    youtube3 = Thread(target=youtube.streamVideo, args=(browser3, duration))
+    streaming_threads.append(youtube3)
+    browser4 = webdriver.Chrome()
+    browsers.append(browser4)
+    youtube4 = Thread(target=youtube.streamVideo, args=(browser4, duration))
+    streaming_threads.append(youtube4)
+    browser5 = webdriver.Chrome()
+    browsers.append(browser5)
+    youtube5 = Thread(target=youtube.streamVideo, args=(browser5, duration))
+    streaming_threads.append(youtube5)
+    return browsers, capture_youtube_thread, file, streaming_threads
+
+
+
 
 
 
 if __name__ == "__main__":
+    
 
     '''
     netflixuser = os.environ["netflixuser"]

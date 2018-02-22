@@ -13,8 +13,8 @@ def streamVideo(browser, duration):
     link = video.get_attribute('href')
     browser.get(link)
 
-    time.sleep(1)
+    time.sleep(2)
     play_button = browser.find_element_by_css_selector('button[title="Afspil"]')
     play_button.click()
-    time.sleep(duration)
+
 

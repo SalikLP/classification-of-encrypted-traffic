@@ -14,4 +14,3 @@ def streamVideo(browser, duration):
     link = video.get_attribute('href')
 
     browser.get(link)
-    time.sleep(duration)
