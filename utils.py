@@ -6,16 +6,31 @@ import pandas as pd
 
 
 def save_pcap(dir, filename):
+    '''
+    This method read a pcap file and saves it to an h5 dataframe.
+    The file is overwritten if it already exists.
+    :param dir: The folder containing the pcap file
+    :param filename: The name of the pcap file
+    :return: Nothing
+    '''
     df = read_pcap(dir, filename)
-    save_dataframe_h5(df, dir, filename)
-
-
-def save_dataframe_h5(df, dir, filename):
     key = filename.split('-')[0]
     df.to_hdf(dir + filename + '.h5', key=key, mode='w')
 
 
 def read_pcap(dir, filename):
+    '''
+    This method will extract the packets of the major session within the pcap file. It will label the packets according
+    to the filename.
+    The method excludes packets between local/internal ip adresses (ip.src and ip.dst startswith 10.....)
+    The method finds the major sessions by counting the packets for each session and calculate a threshold dependent
+    on the session with most packets. All sessions with more packets than the threshold value is extracted and placed
+    in the dataframe.
+
+    :param dir: The directory in which the pcap file is located. Should end with a /
+    :param filename: The name of the pcap file. It is expected to contain the label of the data before the first - char
+    :return: A dataframe containing the extracted packets.
+    '''
     time_s = time.clock()
     count = 0
     label = filename.split('-')[0]
@@ -37,10 +52,11 @@ def read_pcap(dir, filename):
     time_r = time.clock()
     time_read = time_r-time_s
     print("Time to read PCAP: "+ str(time_read))
-    sessions = data.sessions()
+    sessions = data.sessions(session_extractor=session_extractor)
     for id, session in sessions.items():
         for packet in session:
-            if IP in packet and (UDP in packet or TCP in packet):
+            # Check that the packet is transferred by either UDP or TCP and ensure that it is not a packet between to local/internal IP adresses (occurs when using vnc and such)
+            if IP in packet and (UDP in packet or TCP in packet) and not (packet[IP].dst.startswith('10.') and packet[IP].src.startswith('10.')):
                 ip_layer = packet[IP]
                 transport_layer = ip_layer.payload
                 frametimes.append(packet.time)
@@ -72,8 +88,19 @@ def read_pcap(dir, filename):
     print("Time to convert PCAP to dataframe: " + str(total_time))
     return df
 
-
 def filter_pcap_by_ip(dir, filename, ip_list, label):
+    '''
+    This method can be used  to extract certain packets (associted with specified ip adresses) from a pcap file.
+    The method expects user knowledge of the communication protocol used by the specified ip adresses for the label to be correct.
+
+    The label is intended to be either http or https.
+    :param dir: The directory in which the pcap file is located
+    :param filename: The name of the pcap file that should be loaded
+    :param ip_list: A list of ip adresses of interest. Packets with either ip.src or ip.dst in ip_list will be extracted
+    :param label: The label that should be applied to the extracted packets. Note that the ip_list should contain
+                  adresses that we know communicate over http or https in order to match with the label
+    :return: A dataframe containing information about the extracted packets from the pcap file.
+    '''
     time_s = time.clock()
     count = 0
     print("Read PCAP, label is %s" % label)
@@ -227,3 +254,7 @@ def packetAnonymizer(packet):
     p[34:36] = 0
     p[36:38] = 0
     return p
+
+
+
+read_pcap('../Data/', 'drtv-2002_1453')
