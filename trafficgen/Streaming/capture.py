@@ -12,7 +12,7 @@ def captureTraffic(interfaceNumber, duration, dir, file):
     if not os.path.isdir(dir):
         os.mkdir(dir)
     #open(file, "w") # overwrites if file already exists
-    os.system("echo %s |sudo -S tshark -i %d -a duration:%d -w %s" % ('Napatech10',interfaceNumber, duration, file))
+    os.system("echo %s |sudo -S tshark -i %d -a duration:%d -w %s port not 5901 and ip and not broadcast and not multicast" % ('Napatech10',interfaceNumber, duration, file))
     os.system("echo %s |sudo -S chown mclrn:mclrn %s" % ('Napatech10', file))
 
 
