@@ -15,7 +15,7 @@ def save_pcap(dir, filename, session_threshold=None):
     '''
     df = read_pcap(dir, filename, session_threshold)
     key = filename.split('-')[0]
-    df.to_hdf(dir + filename + '.h5', key=key, mode='w')
+    df.to_hdf(dir + 'h5/' + filename + '.h5', key=key, mode='w')
 
 
 def read_pcap(dir, filename, session_threshold=None):

@@ -1,9 +1,12 @@
+import sys
+# Add the utils folder path to the sys.path list
+sys.path.append('/home/mclrn/dlproject/')
 import utils
 import glob
 import os
 
 
-dir = '../../Data/'
+dir = '../Data/'
 session_threshold = 10000
 
 for fullname in glob.iglob(dir + '*.pcap'):
