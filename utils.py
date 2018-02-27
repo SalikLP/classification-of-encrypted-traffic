@@ -168,7 +168,12 @@ def session_extractor(p):
         if 'IP' in p:
             src = p[IP].src
             dst = p[IP].dst
-            if 'TCP' in p:
+            if NTP in p:
+                if src.startswith('10.'):
+                    sess = p.sprintf("NTP %IP.src%:%r,UDP.sport% > %IP.dst%:%r,UDP.dport%")
+                elif dst.startswith('10.'):
+                    sess = p.sprintf("NTP %IP.dst%:%r,UDP.dport% > %IP.src%:%r,UDP.sport%")
+            elif 'TCP' in p:
                 if src.startswith('10.'):
                     sess = p.sprintf("TCP %IP.src%:%r,TCP.sport% > %IP.dst%:%r,TCP.dport%")
                 elif dst.startswith('10.'):
