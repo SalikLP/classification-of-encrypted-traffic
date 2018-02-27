@@ -5,7 +5,7 @@ import time
 import pandas as pd
 
 
-def save_pcap(dir, filename):
+def save_pcap(dir, filename, session_threshold=None):
     '''
     This method read a pcap file and saves it to an h5 dataframe.
     The file is overwritten if it already exists.
@@ -13,12 +13,12 @@ def save_pcap(dir, filename):
     :param filename: The name of the pcap file
     :return: Nothing
     '''
-    df = read_pcap(dir, filename)
+    df = read_pcap(dir, filename, session_threshold)
     key = filename.split('-')[0]
     df.to_hdf(dir + filename + '.h5', key=key, mode='w')
 
 
-def read_pcap(dir, filename):
+def read_pcap(dir, filename, session_threshold=None):
     '''
     This method will extract the packets of the major session within the pcap file. It will label the packets according
     to the filename.
@@ -35,7 +35,9 @@ def read_pcap(dir, filename):
     count = 0
     label = filename.split('-')[0]
     print("Read PCAP, label is %s" % label)
-    data = rdpcap(dir + filename + '.pcap')
+    if not filename.endswith('.pcap'):
+        filename += '.pcap'
+    data = rdpcap(dir + filename)
     totalPackets = len(data)
     percentage = int(totalPackets / 100)
     # Workaround/speedup for pandas append to dataframe
@@ -54,6 +56,9 @@ def read_pcap(dir, filename):
     print("Time to read PCAP: "+ str(time_read))
     sessions = data.sessions(session_extractor=session_extractor)
     for id, session in sessions.items():
+        if session_threshold is not None:
+            if len(session) < session_threshold:
+                continue
         for packet in session:
             # Check that the packet is transferred by either UDP or TCP and ensure that it is not a packet between to local/internal IP adresses (occurs when using vnc and such)
             if IP in packet and (UDP in packet or TCP in packet) and not (packet[IP].dst.startswith('10.') and packet[IP].src.startswith('10.')):
@@ -257,4 +262,4 @@ def packetAnonymizer(packet):
 
 
 
-read_pcap('../Data/', 'drtv-2002_1453')
+# read_pcap('../Data/', 'drtv-2302_1031')
