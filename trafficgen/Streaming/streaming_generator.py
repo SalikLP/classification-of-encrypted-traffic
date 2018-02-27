@@ -24,99 +24,44 @@ def notifySlack(message):
     except:
         sc.api_call("chat.postMessage", channel="#server", text="Could not send stacktrace")
 
-def generate_streaming(duration):
+def generate_streaming_hbo(duration, username, password):
     '''
-    This method is not used anymore
-
-    :param duration: time in seconds for streaming
-    :return:
-    '''
-    # Open the chrome webdriver
+        This method will generate total_iterations of pcap files containing traffic captured while streaming netflix.
+        :param duration: Time to stream
+        :param username: Valid netflix username
+        :param password: Password for netflix account
+        :return:
+        '''
+    total_iterations = 1000
+    iteration = 0
     dir = '/home/mclrn/Data'
 
-    dr_counter = 0
-    while dr_counter < 100:
-        browser = webdriver.Chrome()
-        # Create filename
-        now = datetime.datetime.now()
-        file = dir + "/%s-%.2d%.2d_%.2d%.2d.pcap" % ("drtv", now.day, now.month, now.hour, now.minute)
-        # Instantiate thread
-        t1 = Thread(target=cap.captureTraffic, args=(1, duration, dir, file))
-        try:
-            t1.start()
-            dr.streamVideo(browser, duration)
-            browser.close()
-            dr_counter += 1
-        except Exception as e:
-            t1.join() # Wait for thread to join
-            cap.cleanup(file) # Cleanup by deleting the pcap file
-            browser.close() # Close the browser
-            notifySlack("Something went wrong while streaming \n %s" % traceback.format_exc())
-        browser.quit()
+    # instantiate browser
+    browser = webdriver.Chrome()
+    # Enable flash and login on the browser
+    hbo.enable_flash(browser, page="https://dk.hbonordic.com:443")
+    hbo.login(browser, username, password)
 
-    netflix_counter = 0
-    while netflix_counter < 100:
-        browser = webdriver.Chrome()
-        # Create filename
-        now = datetime.datetime.now()
-        file = dir + "/%s-%.2d%.2d_%.2d%.2d.pcap" % ("netflix", now.day, now.month, now.hour, now.minute)
-        # Instantiate thread
-        t1 = Thread(target=cap.captureTraffic, args=(1, duration, dir, file))
-        try:
-            t1.start()
-            netflix.streamVideo(browser, duration, netflixuser, netflixpassword)
-            browser.close()
-            netflix_counter += 1
-        except Exception as e:
-            t1.join()  # Wait for thread to join
-            cap.cleanup(file)  # Cleanup by deleting the pcap file
-            browser.close()  # Close the browser
-            notifySlack("Something went wrong while streaming \n %s" % traceback.format_exc())
-        browser.quit()
-
-    youtube_counter = 0
-    while youtube_counter < 100:
-        browser = webdriver.Chrome()
-        # Create filename
-        now = datetime.datetime.now()
-        file = dir + "/%s-%.2d%.2d_%.2d%.2d.pcap" % ("youtube", now.day, now.month, now.hour, now.minute)
-        # Instantiate thread
-        t1 = Thread(target=cap.captureTraffic, args=(1, duration, dir, file))
-        try:
-            t1.start()
-            youtube.streamVideo(browser, duration)
-            browser.close()
-            youtube_counter += 1
-        except Exception as e:
-            t1.join()  # Wait for thread to join
-            cap.cleanup(file)  # Cleanup by deleting the pcap file
-            browser.close()  # Close the browser
-            notifySlack("Something went wrong while streaming \n %s" % traceback.format_exc())
-        browser.quit()
-
-    hbo_counter = 0
-    while hbo_counter < 100:
-        browser = webdriver.Chrome()
+    while iteration < total_iterations:
         # Create filename
         now = datetime.datetime.now()
         file = dir + "/%s-%.2d%.2d_%.2d%.2d.pcap" % ("hbo", now.day, now.month, now.hour, now.minute)
-        # Instantiate thread
+        # Instantiate thread for capturing traffic
         t1 = Thread(target=cap.captureTraffic, args=(1, duration, dir, file))
+
         try:
             t1.start()
-            hbo.streamVideo(browser, duration, hbouser, hbopassword)
-            browser.close()
-            hbo_counter += 1
+            # Start stream
+            hbo.streamVideo(browser)
+            # Wait until the capture is done
+            t1.join()
+            iteration += 1
         except Exception as e:
-            t1.join()  # Wait for thread to join
-            cap.cleanup(file)  # Cleanup by deleting the pcap file
-            browser.close()  # Close the browser
-            notifySlack("Something went wrong while streaming \n %s" % traceback.format_exc())
-        browser.quit()
+            notifySlack("Something went wrong in the attempt to stream hbo \n %s" % traceback.format_exc())
+            t1.join()
+            cap.cleanup(file)
 
-    notifySlack("Streaming has completed")
-
-
+    notifySlack("The server has ended streaming from hbo. Iterations completed %d" % iteration)
 
 def generate_streaming_netflix(duration, username, password):
     '''

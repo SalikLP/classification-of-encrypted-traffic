@@ -54,11 +54,8 @@ def login(browser, username, password):
     browser.get("https://dk.hbonordic.com/home")
     time.sleep(3)
 
-def streamVideo(browser, duration, username, password):
-    enable_flash(browser, page="https://dk.hbonordic.com:443")
-    login(browser, username, password)
+def streamVideo(browser):
     videos = browser.find_elements_by_css_selector("a[data-automation='play-button']")
     video = videos[randint(0, len(videos))]
     videoURL = video.get_attribute("href")
     browser.get(videoURL)
-    time.sleep(duration)
