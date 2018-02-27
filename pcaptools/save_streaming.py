@@ -5,6 +5,7 @@ import utils
 import glob
 import os
 from threading import Thread
+import multiprocessing
 
 def split_list(list, chunks):
     avg = len(list) / float(chunks)
@@ -41,7 +42,7 @@ if __name__ == "__main__":
 
     for file_split in files_splits:
         # create a thread for each
-        t1 = Thread(target=save_streaming_task, args=(file_split))
+        t1 = multiprocessing.Process(target=save_streaming_task, args=(file_split,))
         t1.start()
 
 
