@@ -25,6 +25,12 @@ def notifySlack(message):
         sc.api_call("chat.postMessage", channel="#server", text="Could not send stacktrace")
 
 def generate_streaming(duration):
+    '''
+    This method is not used anymore
+
+    :param duration: time in seconds for streaming
+    :return:
+    '''
     # Open the chrome webdriver
     dir = '/home/mclrn/Data'
 
@@ -110,6 +116,46 @@ def generate_streaming(duration):
 
     notifySlack("Streaming has completed")
 
+
+
+def generate_streaming_netflix(duration, username, password):
+    '''
+    This method will generate total_iterations of pcap files containing traffic captured while streaming netflix.
+    :param duration: Time to stream
+    :param username: Valid netflix username
+    :param password: Password for netflix account
+    :return:
+    '''
+    total_iterations = 1000
+    iteration = 0
+    dir = '/home/mclrn/Data'
+
+
+    # instantiate browser
+    browser = webdriver.Chrome()
+    # Perform login procedure in the browser
+    netflix.login(browser, username, password)
+
+    while iteration < total_iterations:
+        # Create filename
+        now = datetime.datetime.now()
+        file = dir + "/%s-%.2d%.2d_%.2d%.2d.pcap" % ("netflix", now.day, now.month, now.hour, now.minute)
+        # Instantiate thread for capturing traffic
+        t1 = Thread(target=cap.captureTraffic, args=(1, duration, dir, file))
+
+        try:
+            t1.start()
+            # Start stream
+            netflix.streamVideo(browser, duration)
+            # Wait until the capture is done
+            t1.join()
+            iteration +=1
+        except Exception as e:
+            notifySlack("Something went wrong in the attempt to stream netflix \n %s" % traceback.format_exc())
+            t1.join()
+            cap.cleanup(file)
+
+    notifySlack("The server has ended streaming from netflix. Iterations completed %d" %iteration)
 
 def generate_streaming_multithread(duration):
     total_iterations = 100
@@ -223,16 +269,13 @@ def generate_multithreaded_youtube_streaming(dir, duration):
 
 
 if __name__ == "__main__":
-    
-
-    '''
-    netflixuser = os.environ["netflixuser"]
-    netflixpassword = os.environ["netflixpassword"]
-
-    hbouser = os.environ["hbouser"]
-    hbopassword = os.environ["hbopassword"]
-    '''
+    #netflixuser = os.environ["netflixuser"]
+    #netflixpassword = os.environ["netflixpassword"]
+    #hbouser = os.environ["hbouser"]
+    #hbopassword = os.environ["hbopassword"]
+    #slack_token = os.environ['slack_token']
     # Specify duration in seconds
     duration = 60 * 1
     #generate_streaming(duration)
-    generate_streaming_multithread(duration)
+    #generate_streaming_multithread(duration)
+    generate_streaming_netflix(duration,netflixuser, netflixpassword)
