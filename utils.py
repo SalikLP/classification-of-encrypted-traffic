@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 import pandas as pd
+import glob
 
 
 def save_pcap(dir, filename, session_threshold=None):
@@ -254,7 +255,12 @@ def plotNNFilter(units):
 
 
 def packetAnonymizer(packet):
+    """"
+    Takes a packet as a bytestring in hex format and convert to unsigned 8bit integers [0-255]
+    Sets the header fields which contain MAC, IP and Port information to 0
+    """
     # Should work with TCP and UDP
+
     p = np.fromstring(packet, dtype=np.uint8)
     # set MACs to 0
     p[0:12] = 0
@@ -266,5 +272,68 @@ def packetAnonymizer(packet):
     return p
 
 
+def extractdatapoints(dataframe, num_headers=15, session=True):
+    """"
+    Extracts the concatenated header datapoints from a dataframe while anonomizing the individual header
+    :returns a dataframe with datapoints (bytes) and labels
+    """
+    group_by = dataframe.sort_values(['time']).groupby(['ip.dst', 'ip.src', 'port.dst', 'port.src'])
+    gb_dict = dict(list(group_by))
+    data_points = []
+    labels = []
+    done = set()
+    num_too_short = 0
+    for k, v in gb_dict.items():
+        # v is a DataFrame
+        # k is a tuple (src, dst, sport, dport)
+        if k in done:
+            continue
+        done.add(k)
+        if session:
+            other_direction_key = (k[1], k[0], k[3], k[2])
+            other_direction = gb_dict[other_direction_key]
+            v = pd.concat([v, other_direction]).sort_values(['time'])
+            done.add(other_direction_key)
+        if len(v) < num_headers:
+            num_too_short += 1
+            continue
+        packets = v['bytes'].values[:num_headers]
+        headers = []
+        for i in range(num_headers):
+            p = packets[i]
+            p_an = packetAnonymizer(p)
+            protocol = v['protocol'].iloc[0]
+            # Extract headers (TCP = 54 Bytes, UDP = 42 Bytes - Maybe + 4 Bytes for VLAN tagging) from x first packets of session/flow
+            if protocol == 'TCP':
+                # TCP
+                header = p_an[:54]
+            else:
+                # UDP
+                header = p_an[:42]
+            headers.append(header)
+        # Concatenate headers as the feature vector
+        feature_vector = np.concatenate(headers).ravel()
+        data_points.append(feature_vector)
+        labels.append(v['label'].iloc[0])
+    d = {'bytes': data_points, 'label': labels}
+    return pd.DataFrame(data=d)
 
+
+def saveextractedheaders(train_dir, savename):
+    """"
+    Extracts datapoints from all .h5 files in train_dir and saves the them in a new .h5 file
+    """
+    dataframes = []
+    for fullname in glob.iglob(train_dir + '*.h5'):
+        filename = os.path.basename(fullname)
+        df = load_h5(train_dir, filename)
+        datapoints = extractdatapoints(df)
+        dataframes.append(datapoints)
+    # create one large dataframe
+    data = pd.concat(dataframes)
+    key = savename.split('-')[0]
+    data.to_hdf(train_dir + 'extracted/' + savename + '.h5', key=key, mode='w')
+
+
+# saveextractedheaders('./', 'extracted-0103_1136')
 # read_pcap('../Data/', 'drtv-2302_1031')

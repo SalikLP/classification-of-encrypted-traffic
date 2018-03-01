@@ -4,11 +4,15 @@ import tensorflow as tf
 import tf_utils as tfu
 import confusionmatrix as conf
 import numpy as np
+import datetime
+
+now = datetime.datetime.now()
+subdir = "/%.2d%.2d_%.2d%.2d" % (now.day, now.month, now.hour, now.minute)
 summaries_dir = '../tensorboard'
-dir = '../../Data/header/'
+dir = '../../Data/h5/extracted/'
 
 input_size = 810
-data = dataset.read_data_sets(dir, one_hot=True, validation_size=0.1, test_size=0.1, balance_classes=True,
+data = dataset.read_data_sets(dir, one_hot=True, validation_size=0.1, test_size=0.1, balance_classes=False,
                               payload_length=input_size, num_headers=15)
 tf.reset_default_graph()
 num_classes = len(dataset._label_encoder.classes_)
@@ -20,8 +24,8 @@ x_pl = tf.placeholder(tf.float32, [None, input_size], name='xPlaceholder')
 y_pl = tf.placeholder(tf.float64, [None, num_classes], name='yPlaceholder')
 y_pl = tf.cast(y_pl, tf.float32)
 
-x = tfu.ffn_layer('layer1', x_pl, 200, activation=tf.nn.relu)
-# x = tfu.ffn_layer('layer2', x, 730, activation=tf.nn.relu)
+x = tfu.ffn_layer('layer1', x_pl, 50, activation=tf.nn.relu)
+# x = tfu.ffn_layer('layer2', x, 50, activation=tf.nn.sigmoid)
 # x = tfu.ffn_layer('layer3', x, 730, activation=tf.nn.relu)
 y = tfu.ffn_layer('output_layer', x, hidden_units=num_classes, activation=tf.nn.softmax)
 
@@ -66,9 +70,9 @@ tf.summary.scalar('accuracy', accuracy)
 
 # Merge all the summaries and write them out
 merged = tf.summary.merge_all()
-train_writer = tf.summary.FileWriter(summaries_dir + '/train')
-val_writer = tf.summary.FileWriter(summaries_dir + '/validation')
-test_writer = tf.summary.FileWriter(summaries_dir + '/test')
+train_writer = tf.summary.FileWriter(summaries_dir + '/train/' + subdir)
+val_writer = tf.summary.FileWriter(summaries_dir + '/validation/' + subdir)
+test_writer = tf.summary.FileWriter(summaries_dir + '/test/' + subdir)
 
 # Training Loop
 batch_size = 100
@@ -79,6 +83,7 @@ train_loss, train_accuracy = [], []
 test_loss, test_accuracy = [], []
 
 with tf.Session() as sess:
+    train_writer.add_graph(sess.graph)
     sess.run(tf.global_variables_initializer())
     print('Begin training loop')
 

@@ -9,6 +9,7 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
 
+
 _label_encoder = LabelEncoder()
 class DataSet(object):
 
@@ -140,52 +141,54 @@ def read_data_sets(train_dir,
     for fullname in glob.iglob(train_dir + '*.h5'):
         filename = os.path.basename(fullname)
         df = utils.load_h5(train_dir, filename)
+        # datapoints = utils.extractdatapoints(df)
+        # dataframes.append(datapoints)
         dataframes.append(df)
     # create one large dataframe
     data = pd.concat(dataframes)
 
     # groupby session/flow orderby time
-    group_by = data.sort_values(['time']).groupby(['ip.dst', 'ip.src', 'port.dst', 'port.src'])
-    gb_dict = dict(list(group_by))
-    data_points = []
-    labels = []
-    done = set()
-    num_too_short = 0
-    for k, v in gb_dict.items():
-        # v is a DataFrame
-        # k is a tuple (src, dst, sport, dport)
-        if k in done:
-            continue
-        done.add(k)
-        if session:
-            other_direction_key = (k[1], k[0], k[3], k[2])
-            other_direction = gb_dict[other_direction_key]
-            v = pd.concat([v, other_direction]).sort_values(['time'])
-            done.add(other_direction_key)
-        if len(v) < num_headers:
-            num_too_short += 1
-            continue
-        packets = v['bytes'].values[:num_headers]
-        headers = []
-        for i in range(num_headers):
-            p = packets[i]
-            p_an = utils.packetAnonymizer(p)
-            protocol = v['protocol'].iloc[0]
-            # Extract headers (TCP = 54 Bytes, UDP = 42 Bytes - Maybe + 4 Bytes for VLAN tagging) from x first packets of session/flow
-            if protocol == 'TCP':
-                #TCP
-                header = p_an[:54]
-            else:
-                # UDP
-                header = p_an[:42]
-            headers.append(header)
-        # Concatenate headers as the feature vector
-        feature_vector = np.concatenate(headers).ravel()
-        data_points.append(feature_vector)
-        labels.append(v['label'].iloc[0])
-    d = {'bytes': data_points, 'label': labels}
-    # convert back to DataFrame
-    data = pd.DataFrame(data=d)
+    # group_by = data.sort_values(['time']).groupby(['ip.dst', 'ip.src', 'port.dst', 'port.src'])
+    # gb_dict = dict(list(group_by))
+    # data_points = []
+    # labels = []
+    # done = set()
+    # num_too_short = 0
+    # for k, v in gb_dict.items():
+    #     # v is a DataFrame
+    #     # k is a tuple (src, dst, sport, dport)
+    #     if k in done:
+    #         continue
+    #     done.add(k)
+    #     if session:
+    #         other_direction_key = (k[1], k[0], k[3], k[2])
+    #         other_direction = gb_dict[other_direction_key]
+    #         v = pd.concat([v, other_direction]).sort_values(['time'])
+    #         done.add(other_direction_key)
+    #     if len(v) < num_headers:
+    #         num_too_short += 1
+    #         continue
+    #     packets = v['bytes'].values[:num_headers]
+    #     headers = []
+    #     for i in range(num_headers):
+    #         p = packets[i]
+    #         p_an = utils.packetAnonymizer(p)
+    #         protocol = v['protocol'].iloc[0]
+    #         # Extract headers (TCP = 54 Bytes, UDP = 42 Bytes - Maybe + 4 Bytes for VLAN tagging) from x first packets of session/flow
+    #         if protocol == 'TCP':
+    #             #TCP
+    #             header = p_an[:54]
+    #         else:
+    #             # UDP
+    #             header = p_an[:42]
+    #         headers.append(header)
+    #     # Concatenate headers as the feature vector
+    #     feature_vector = np.concatenate(headers).ravel()
+    #     data_points.append(feature_vector)
+    #     labels.append(v['label'].iloc[0])
+    # d = {'bytes': data_points, 'label': labels}
+    # # convert back to DataFrame
+    # data = pd.DataFrame(data=d)
 
     num_classes = len(data['label'].unique())
 
