@@ -3,6 +3,7 @@ import glob
 import os
 import pandas as pd
 import numpy as np
+import math
 
 
 def getmeanstd(dataframe, label):
@@ -20,12 +21,11 @@ def getmeanstd(dataframe, label):
 
 
 def byteindextoheaderfield(number, TCP=True):
-    bytenumber = 0
     if TCP:
         bytenumber = number % 54
     else:
         bytenumber = number % 42
-    print(bytenumber)
+
     if bytenumber in range(6):
         return "Destination MAC"
     if bytenumber in range(6, 12):
@@ -90,7 +90,9 @@ nf_mean, nf_mean_sub, nf_std = getmeanstd(data, 'netflix')
 mean_diff = dr_mean - nf_mean
 sort_diff = (-abs(mean_diff)).argsort() #Sort on absolute values in decending order
 for i in range(10):
-    print(byteindextoheaderfield(sort_diff[i]))
+    packetnumber = math.ceil(sort_diff[i] / 54)
+    bytenumber = sort_diff[i] % 54
+    print('Index %i is bytenumber %i in packet: %i' % (sort_diff[i],bytenumber, packetnumber), byteindextoheaderfield(sort_diff[i]))
 # id_max = np.argmax(mean_diff)
 # print(byteindextoheaderfield(id_max))
 # id_min = np.argmin(mean_diff)
