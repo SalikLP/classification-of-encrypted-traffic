@@ -232,13 +232,24 @@ def plotHex(hexvalues, filename):
     return canvas
 
 
-def pad_elements_with_zero(payloads):
+def pad_string_elements_with_zero(payloads):
     # Assume max payload to be 1460 bytes but as each byte is now 2 hex digits we take double length
     max_payload_len = 1460*2
     # Pad with '0'
     payloads = [s.ljust(max_payload_len, '0') for s in payloads]
     return payloads
 
+
+def pad_arrays_with_zero(payloads, payload_length=810):
+    tmp_payloads = []
+    for x in payloads:
+        payload = np.zeros(payload_length, dtype=np.uint8)
+        # pl = np.fromstring(x, dtype=np.uint8)
+        payload[:x.shape[0]] = x
+        tmp_payloads.append(payload)
+
+    # payloads = [np.fromstring(x) for x in payloads]
+    return np.array(tmp_payloads)
 
 def hash_elements(payloads):
     return payloads

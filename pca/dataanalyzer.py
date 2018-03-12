@@ -4,14 +4,26 @@ import os
 import pandas as pd
 import numpy as np
 import math
+import pca as p
+
+
+def getbytes(dataframe, payload_length=810):
+    values = dataframe['bytes'].values
+    bytes = np.zeros((values.shape[0], payload_length))
+    for i, v in enumerate(values):
+        payload = np.zeros(payload_length, dtype=np.uint8)
+        payload[:v.shape[0]] = v
+        bytes[i] = payload
+    return bytes
 
 
 def getmeanstd(dataframe, label):
     labels = dataframe['label'] == label
-    values = dataframe[labels]['bytes'].values
-    bytes = np.zeros((values.shape[0], values[0].shape[0]))
-    for i, v in enumerate(values):
-        bytes[i] = v
+    bytes = getbytes(dataframe[labels])
+    # values = dataframe[labels]['bytes'].values
+    # bytes = np.zeros((values.shape[0], values[0].shape[0]))
+    # for i, v in enumerate(values):
+    #     bytes[i] = v
 
     # Ys = (X - np.mean(X, axis=0)) / np.std(X, axis=0)
     mean = np.mean(bytes, axis=0)
@@ -93,6 +105,14 @@ for i in range(10):
     packetnumber = math.ceil(sort_diff[i] / 54)
     bytenumber = sort_diff[i] % 54
     print('Index %i is bytenumber %i in packet: %i' % (sort_diff[i],bytenumber, packetnumber), byteindextoheaderfield(sort_diff[i]))
+
+bytes = getbytes(data)
+labels = data['label']
+pca = p.runpca(bytes, 50)
+p.plotvarianceexp(pca, 50)
+Z = p.componentprojection(bytes, pca)
+p.plotprojection(Z, 0, labels)
+p.showplots()
 # id_max = np.argmax(mean_diff)
 # print(byteindextoheaderfield(id_max))
 # id_min = np.argmin(mean_diff)

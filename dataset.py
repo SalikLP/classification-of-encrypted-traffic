@@ -210,15 +210,16 @@ def read_data_sets(train_dir,
     # array_pl = list(raw_payload) this converts raw bytestring to list of int
 
     # pad with zero up to payload_length length
-    tmp_payloads = []
-    for x in payloads:
-        payload = np.zeros(payload_length, dtype=np.uint8)
-        # pl = np.fromstring(x, dtype=np.uint8)
-        payload[:x.shape[0]] = x
-        tmp_payloads.append(payload)
-
-    # payloads = [np.fromstring(x) for x in payloads]
-    payloads = np.array(tmp_payloads)
+    payloads = utils.pad_arrays_with_zero(payloads, payload_length=payload_length)
+    # tmp_payloads = []
+    # for x in payloads:
+    #     payload = np.zeros(payload_length, dtype=np.uint8)
+    #     # pl = np.fromstring(x, dtype=np.uint8)
+    #     payload[:x.shape[0]] = x
+    #     tmp_payloads.append(payload)
+    #
+    # # payloads = [np.fromstring(x) for x in payloads]
+    # payloads = np.array(tmp_payloads)
 
 
     if not 0 <= validation_size <= len(payloads):
