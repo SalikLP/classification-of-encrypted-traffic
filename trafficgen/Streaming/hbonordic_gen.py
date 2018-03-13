@@ -1,6 +1,5 @@
 import time
 from random import randint
-from selenium import webdriver
 
 def expand_shadow_element(browser, element):
   shadow_root = browser.execute_script('return arguments[0].shadowRoot', element)
@@ -22,7 +21,7 @@ def enable_flash(browser, page):
     settings_subpage = shadow_settings_privacy_page.find_elements_by_css_selector("settings-subpage")[0]
     category_setting_exceptions = settings_subpage.find_elements_by_css_selector("category-setting-exceptions")[0]
     shadow_category_setting_exceptions = expand_shadow_element(browser, category_setting_exceptions)
-    site_list = shadow_category_setting_exceptions.find_elements_by_css_selector("site-list[category-header='Tillad']")[
+    site_list = shadow_category_setting_exceptions.find_elements_by_css_selector("site-list[category-header='Allow']")[
         0]
     shadow_site_list = expand_shadow_element(browser, site_list)
     addSite = shadow_site_list.find_element_by_id('addSite')
@@ -31,9 +30,15 @@ def enable_flash(browser, page):
     shadow_dialog = expand_shadow_element(browser, dialog)
     dialog_window = shadow_dialog.find_element_by_id("dialog")
     input_box = dialog_window.find_element_by_id("site")
-    input_box.send_keys(page)  # INSERT EXCEPTION HERE
+    print("Enabling flash for page: %s" %page)
+    input_box.send_keys("dk.hbonordic.com:443")  # INSERT EXCEPTION HERE
+    time.sleep(2)
     add_button = dialog_window.find_element_by_id("add")
     add_button.click()
+    id = browser.session_id
+    browser.close()
+    time.sleep(2)
+    browser.launch_app(id)
 
 
 def login(browser, username, password):
@@ -49,12 +54,9 @@ def login(browser, username, password):
 
     submit.click()
 
-    time.sleep(3)
-
-    browser.get("https://dk.hbonordic.com/home")
-    time.sleep(3)
-
 def streamVideo(browser):
+    browser.get("https://dk.hbonordic.com/home")
+    time.sleep(2)
     videos = browser.find_elements_by_css_selector("a[data-automation='play-button']")
     video = videos[randint(0, len(videos))]
     videoURL = video.get_attribute("href")

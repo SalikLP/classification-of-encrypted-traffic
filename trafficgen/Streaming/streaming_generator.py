@@ -3,6 +3,7 @@ from threading import Thread
 from selenium import webdriver
 from slackclient import SlackClient
 import traceback
+import time
 import os
 '''
 import trafficgen.Streaming.capture as cap
@@ -36,12 +37,16 @@ def generate_streaming_hbo(duration, username, password):
     iteration = 0
     dir = '/home/mclrn/Data'
 
+    options = webdriver.ChromeOptions()
+    options.add_argument('user-data-dir=/home/mclrn/.config/google-chrome/')
     # instantiate browser
-    browser = webdriver.Chrome()
-    # Enable flash and login on the browser
-    hbo.enable_flash(browser, page="https://dk.hbonordic.com:443")
-    hbo.login(browser, username, password)
+    browser = webdriver.Chrome(options=options)
 
+
+    # Enable flash and login on the browser
+    # hbo.enable_flash(browser, page="https://dk.hbonordic.com:443") Not needed after learned how to use profiles
+    #hbo.login(browser, username, password)
+    print("Logged in")
     while iteration < total_iterations:
         # Create filename
         now = datetime.datetime.now()
