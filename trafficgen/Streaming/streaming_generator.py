@@ -6,17 +6,19 @@ import traceback
 import time
 import os
 '''
-import trafficgen.Streaming.capture as cap
+import trafficgen.Streaming.unix_capture as cap
 import trafficgen.Streaming.drtv_gen as dr
 import trafficgen.Streaming.hbonordic_gen as hbo
 import trafficgen.Streaming.netflix_gen as netflix
 import trafficgen.Streaming.youtube_gen as youtube
+import trafficgen.Streaming.twitch_gen as twitch
 '''
-import capture as cap
+import unix_capture as cap
 import drtv_gen as dr
 import hbonordic_gen as hbo
 import netflix_gen as netflix
 import youtube_gen as youtube
+import twitch_gen as twitch
 
 def notifySlack(message):
     sc = SlackClient(slack_token)
@@ -116,7 +118,7 @@ def generate_streaming_multithread(duration):
     browsers = []
     file = " "
     while iterations < total_iterations:
-
+        '''
         try:
             if iterations % 2 == 0:
                 browsers, capture_thread, file, streaming_threads = generate_multithreaded_dr_streaming(dir, duration)
@@ -124,7 +126,8 @@ def generate_streaming_multithread(duration):
                 browsers, capture_thread, file, streaming_threads = generate_multithreaded_youtube_streaming(dir, duration)
         except Exception as ex:
             notifySlack("Something went wrong when setting up the threads \n %s" % traceback.format_exc())
-
+        '''
+        browsers, capture_thread, file, streaming_threads = generate_multithreaded_streaming(twitch.twitch, "twitch", dir, duration)
         try:
             capture_thread.start()
             for thread in streaming_threads:
@@ -147,6 +150,72 @@ def generate_streaming_multithread(duration):
         for browser in browsers:
             browser.quit()
         iterations+=1
+
+
+def generate_multithreaded_streaming(obj : twitch.Streaming, stream, dir, duration):
+    #### STREAMING ####
+    # Create filename
+    now = datetime.datetime.now()
+    file = dir + "/%s-%.2d%.2d_%.2d%.2d.pcap" % (stream, now.day, now.month, now.hour, now.minute)
+    # Instantiate thread
+    capture_twitch_thread = Thread(target=cap.captureTraffic, args=(1, duration, dir, file))
+    # Create five threads for streaming twitch
+    streaming_threads = []
+    browsers = []
+    browser1 = webdriver.Chrome()
+    browsers.append(browser1)
+    twitch1 = Thread(target=obj.streamVideo, args=(obj,browser1))
+    streaming_threads.append(twitch1)
+    browser2 = webdriver.Chrome()
+    browsers.append(browser2)
+    twitch2 = Thread(target=obj.streamVideo, args=(obj,browser2))
+    streaming_threads.append(twitch2)
+    browser3 = webdriver.Chrome()
+    browsers.append(browser3)
+    twitch3 = Thread(target=obj.streamVideo, args=(obj,browser3))
+    streaming_threads.append(twitch3)
+    browser4 = webdriver.Chrome()
+    browsers.append(browser4)
+    twitch4 = Thread(target=obj.streamVideo, args=(obj,browser4))
+    streaming_threads.append(twitch4)
+    browser5 = webdriver.Chrome()
+    browsers.append(browser5)
+    twitch5 = Thread(target=obj.streamVideo, args=(obj,browser5))
+    streaming_threads.append(twitch5)
+    return browsers, capture_twitch_thread, file, streaming_threads
+
+def generate_multithreaded_twitch_streaming(dir, duration):
+    #### twitchTV STREAMING ####
+    # Create filename
+    now = datetime.datetime.now()
+    file = dir + "/%s-%.2d%.2d_%.2d%.2d.pcap" % ("twitch", now.day, now.month, now.hour, now.minute)
+    # Instantiate thread
+    capture_twitch_thread = Thread(target=cap.captureTraffic, args=(1, duration, dir, file))
+    # Create five threads for streaming twitch
+    streaming_threads = []
+    browsers = []
+    browser1 = webdriver.Chrome()
+    browsers.append(browser1)
+    twitch1 = Thread(target=twitch.streamVideo, args=(browser1, duration))
+    streaming_threads.append(twitch1)
+    browser2 = webdriver.Chrome()
+    browsers.append(browser2)
+    twitch2 = Thread(target=twitch.streamVideo, args=(browser2, duration))
+    streaming_threads.append(twitch2)
+    browser3 = webdriver.Chrome()
+    browsers.append(browser3)
+    twitch3 = Thread(target=twitch.streamVideo, args=(browser3, duration))
+    streaming_threads.append(twitch3)
+    browser4 = webdriver.Chrome()
+    browsers.append(browser4)
+    twitch4 = Thread(target=twitch.streamVideo, args=(browser4, duration))
+    streaming_threads.append(twitch4)
+    browser5 = webdriver.Chrome()
+    browsers.append(browser5)
+    twitch5 = Thread(target=twitch.streamVideo, args=(browser5, duration))
+    streaming_threads.append(twitch5)
+    return browsers, capture_twitch_thread, file, streaming_threads
+
 
 def generate_multithreaded_dr_streaming(dir, duration):
     #### DRTV STREAMING ####
@@ -228,4 +297,9 @@ if __name__ == "__main__":
     duration = 60 * 1
     #generate_streaming(duration)
     #generate_streaming_multithread(duration)
-    generate_streaming_netflix(duration,netflixuser, netflixpassword)
+    #netflixuser = "alex_mulan@hotmail.com"
+    #netflixpassword = 'Basser77'
+    #generate_streaming_netflix(duration,netflixuser, netflixpassword)
+    #r = generate_multithreaded_streaming(twitch.twitch(), "twitch", '/home/mclrn/Data', duration)
+    generate_streaming_multithread(duration)
+    print("something")
