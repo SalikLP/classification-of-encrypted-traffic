@@ -18,6 +18,8 @@ def captureTraffic(interfaceNumber, duration, dir, file):
     os.system("tshark -i %d -a duration:%d -w %s port not 5901 and ip and not broadcast and not multicast" % (interfaceNumber, duration, file))
 
 
+def cleanup(file):
+    os.system("del %s" % file)
 
 '''
 To test
