@@ -23,7 +23,7 @@ def notifySlack(message):
         sc.api_call("chat.postMessage", channel="#server", text="Could not send stacktrace")
 
 
-def generate_streaming(duration, dir, total_iterations):
+def generate_streaming(duration, dir, total_iterations, chrome_options=None):
     iterations = 0
     while iterations < total_iterations:
         '''
@@ -35,7 +35,7 @@ def generate_streaming(duration, dir, total_iterations):
         except Exception as ex:
             notifySlack("Something went wrong when setting up the threads \n %s" % traceback.format_exc())
         '''
-        browsers, capture_thread, file, streaming_threads = generate_multithreaded_streaming(stream.Twitch, "twitch", dir, duration)
+        browsers, capture_thread, file, streaming_threads = generate_multithreaded_streaming(stream.Twitch, "twitch", dir, duration, chrome_options)
         try:
             capture_thread.start()
             for thread in streaming_threads:
@@ -60,7 +60,7 @@ def generate_streaming(duration, dir, total_iterations):
         iterations += 1
 
 
-def generate_singlethreaded_streaming(obj: stream.Streaming, stream_name, dir, duration):
+def generate_singlethreaded_streaming(obj: stream.Streaming, stream_name, dir, duration, chrome_options=None):
     #### STREAMING ####
     # Create filename
     now = datetime.datetime.now()
@@ -70,14 +70,14 @@ def generate_singlethreaded_streaming(obj: stream.Streaming, stream_name, dir, d
     # Create single thread for streaming
     streaming_threads = []
     browsers = []
-    browser1 = webdriver.Chrome()
+    browser1 = webdriver.Chrome(options=chrome_options)
     browsers.append(browser1)
     t1 = Thread(target=obj.stream_video, args=(obj, browser1))
     streaming_threads.append(t1)
     return browsers, capture_thread, file, streaming_threads
 
 
-def generate_multithreaded_streaming(obj: stream.Streaming, stream_name, dir, duration):
+def generate_multithreaded_streaming(obj: stream.Streaming, stream_name, dir, duration, chrome_options=None):
     #### STREAMING ####
     # Create filename
     now = datetime.datetime.now()
@@ -87,23 +87,23 @@ def generate_multithreaded_streaming(obj: stream.Streaming, stream_name, dir, du
     # Create five threads for streaming
     streaming_threads = []
     browsers = []
-    browser1 = webdriver.Chrome()
+    browser1 = webdriver.Chrome(options=chrome_options)
     browsers.append(browser1)
     t1 = Thread(target=obj.stream_video, args=(obj, browser1))
     streaming_threads.append(t1)
-    browser2 = webdriver.Chrome()
+    browser2 = webdriver.Chrome(options=chrome_options)
     browsers.append(browser2)
     t2 = Thread(target=obj.stream_video, args=(obj, browser2))
     streaming_threads.append(t2)
-    browser3 = webdriver.Chrome()
+    browser3 = webdriver.Chrome(options=chrome_options)
     browsers.append(browser3)
     t3 = Thread(target=obj.stream_video, args=(obj, browser3))
     streaming_threads.append(t3)
-    browser4 = webdriver.Chrome()
+    browser4 = webdriver.Chrome(options=chrome_options)
     browsers.append(browser4)
     t4 = Thread(target=obj.stream_video, args=(obj, browser4))
     streaming_threads.append(t4)
-    browser5 = webdriver.Chrome()
+    browser5 = webdriver.Chrome(options=chrome_options)
     browsers.append(browser5)
     t5 = Thread(target=obj.stream_video, args=(obj, browser5))
     streaming_threads.append(t5)
@@ -120,5 +120,9 @@ if __name__ == "__main__":
     duration = 30 * 1
     total_iterations = 100
     save_dir = '/home/mclrn/Data'
-    generate_streaming(duration, save_dir, total_iterations)
+    chrome_profile_dir = "/home/mclrn/.config/google-chrome/"
+    options = webdriver.ChromeOptions()
+    options.add_argument('user-data-dir=' + chrome_profile_dir)
+
+    generate_streaming(duration, save_dir, total_iterations, options)
     print("something")
