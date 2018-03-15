@@ -9,12 +9,7 @@ import trafficgen.Streaming.win_capture as cap
 import trafficgen.Streaming.streaming_types as stream
 
 # import unix_capture as cap
-# import drtv_gen as dr
-# import hbonordic_gen as hbo
-# import netflix_gen as netflix
-# import youtube_gen as youtube
-# import twitch_gen as twitch
-
+# import streaming_types as stream
 
 def notifySlack(message):
     sc = SlackClient(slack_token)
@@ -36,7 +31,7 @@ def generate_streaming(duration, dir, total_iterations, chrome_options=None):
         except Exception as ex:
             notifySlack("Something went wrong when setting up the threads \n %s" % traceback.format_exc())
         '''
-        browsers, capture_thread, file, streaming_threads = generate_singlethreaded_streaming(stream.HboNordic, "hbo", dir, duration, chrome_options)
+        browsers, capture_thread, file, streaming_threads = generate_threaded_streaming(stream.HboNordic, "hbo", dir, duration, chrome_options, num_threads=1)
         # browsers, capture_thread, file, streaming_threads = generate_multithreaded_streaming(stream.Twitch, "twitch", dir, duration, chrome_options)
         try:
             capture_thread.start()
@@ -63,25 +58,7 @@ def generate_streaming(duration, dir, total_iterations, chrome_options=None):
         iterations += 1
 
 
-def generate_singlethreaded_streaming(obj: stream.Streaming, stream_name, dir, duration, chrome_options=None):
-    #### STREAMING ####
-    # Create filename
-    now = datetime.datetime.now()
-    file = dir + "/%s-%.2d%.2d_%.2d%.2d%.2d.pcap" % (stream_name, now.day, now.month, now.hour, now.minute, now.second)
-    # Instantiate thread
-    capture_thread = Thread(target=cap.captureTraffic, args=(5, duration, dir, file))
-    # Create single thread for streaming
-    streaming_threads = []
-    browsers = []
-    browser = webdriver.Chrome(options=chrome_options)
-    browser.implicitly_wait(10)
-    browsers.append(browser)
-    t1 = Thread(target=obj.stream_video, args=(obj, browser))
-    streaming_threads.append(t1)
-    return browsers, capture_thread, file, streaming_threads
-
-
-def generate_multithreaded_streaming(obj: stream.Streaming, stream_name, dir, duration, chrome_options=None):
+def generate_threaded_streaming(obj: stream.Streaming, stream_name, dir, duration, chrome_options=None, num_threads=5):
     #### STREAMING ####
     # Create filename
     now = datetime.datetime.now()
@@ -91,7 +68,7 @@ def generate_multithreaded_streaming(obj: stream.Streaming, stream_name, dir, du
     # Create five threads for streaming
     streaming_threads = []
     browsers = []
-    for i in range(5):
+    for i in range(num_threads):
         browser = webdriver.Chrome(options=chrome_options)
         browser.implicitly_wait(10)
         browsers.append(browser)
@@ -102,7 +79,7 @@ def generate_multithreaded_streaming(obj: stream.Streaming, stream_name, dir, du
 
 
 def get_clear_browsing_button(driver):
-    """Find the "CLEAR BROWSING BUTTON" on the Chrome settings page."""
+    """Find the "CLEAR BROWSING BUTTON" on the Chrome settings page. /deep/ to go past shadow roots"""
     return driver.find_element_by_css_selector('* /deep/ #clearBrowsingDataConfirm')
 
 
