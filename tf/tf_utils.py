@@ -1,8 +1,4 @@
 import tensorflow as tf
-from tensorflow.examples.tutorials.mnist import input_data
-import numpy as np
-import matplotlib.pyplot as plt
-import confusionmatrix as conf
 
 
 def train_input_fn(features, labels, batch_size):

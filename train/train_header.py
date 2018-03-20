@@ -1,8 +1,5 @@
-import utils
-import dataset
 import tensorflow as tf
-import tf_utils as tfu
-import confusionmatrix as conf
+from tf import tf_utils as tfu, confusionmatrix as conf, dataset
 import numpy as np
 import datetime
 

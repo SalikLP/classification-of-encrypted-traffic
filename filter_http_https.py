@@ -1,5 +1,5 @@
 import utils
-import trafficgen.config as cf
+import trafficgen.PyTgen.config as cf
 import socket
 
 Conf = cf.Conf
