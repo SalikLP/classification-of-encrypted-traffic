@@ -1,6 +1,5 @@
 from random import randint
-
-
+import time
 class Streaming:
 
     def stream_video(self, browser):
@@ -12,6 +11,7 @@ class Twitch(Streaming):
     def stream_video(self, browser):
         browser.get('https://www.twitch.tv/directory/game/League%20of%20Legends/videos/all')
         # Choose random video
+        time.sleep(1)
         videos = browser.find_elements_by_css_selector("a[href*='/videos/']")
         video = videos[randint(0, len(videos))]
         link = video.get_attribute('href')
@@ -23,6 +23,7 @@ class Youtube(Streaming):
     def stream_video(self, browser):
         browser.get('https://www.youtube.com')
         # Choose random video
+        time.sleep(1)
         videos = browser.find_elements_by_css_selector("ytd-grid-video-renderer  a[href*='/watch?v=']")
         video = videos[randint(0, len(videos))]
         # thumbnail

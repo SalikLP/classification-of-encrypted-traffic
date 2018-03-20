@@ -5,11 +5,12 @@ from slackclient import SlackClient
 import traceback
 from selenium.webdriver.support.ui import WebDriverWait
 
-import trafficgen.Streaming.win_capture as cap
-import trafficgen.Streaming.streaming_types as stream
 
-# import unix_capture as cap
-# import streaming_types as stream
+# import trafficgen.Streaming.win_capture as cap
+# import trafficgen.Streaming.streaming_types as stream
+
+import unix_capture as cap
+import streaming_types as stream
 
 def notifySlack(message):
     sc = SlackClient(slack_token)
@@ -22,17 +23,16 @@ def notifySlack(message):
 def generate_streaming(duration, dir, total_iterations, chrome_options=None):
     iterations = 0
     while iterations < total_iterations:
-        '''
+        streaming_threads = []
+        file =''
         try:
             if iterations % 2 == 0:
-                browsers, capture_thread, file, streaming_threads = generate_multithreaded_dr_streaming(dir, duration)
+                browsers, capture_thread, file, streaming_threads = generate_threaded_streaming(stream.Twitch, "twitch", dir, duration, chrome_options, num_threads=10)
             else:
-                browsers, capture_thread, file, streaming_threads = generate_multithreaded_youtube_streaming(dir, duration)
+                browsers, capture_thread, file, streaming_threads = generate_threaded_streaming(stream.Youtube, "youtube", dir, duration, chrome_options, num_threads=10)
         except Exception as ex:
             notifySlack("Something went wrong when setting up the threads \n %s" % traceback.format_exc())
-        '''
-        browsers, capture_thread, file, streaming_threads = generate_threaded_streaming(stream.HboNordic, "hbo", dir, duration, chrome_options, num_threads=1)
-        # browsers, capture_thread, file, streaming_threads = generate_multithreaded_streaming(stream.Twitch, "twitch", dir, duration, chrome_options)
+
         try:
             capture_thread.start()
             for thread in streaming_threads:
@@ -42,7 +42,7 @@ def generate_streaming(duration, dir, total_iterations, chrome_options=None):
             capture_thread.join() # Stream until the capture thread joins
             print("capture done - thread has joined")
             for browser in browsers:
-                clear_cache(browser)
+            #    clear_cache(browser)
                 browser.close()
 
         except Exception as e:
@@ -64,7 +64,7 @@ def generate_threaded_streaming(obj: stream.Streaming, stream_name, dir, duratio
     now = datetime.datetime.now()
     file = dir + "/%s-%.2d%.2d_%.2d%.2d%.2d.pcap" % (stream_name, now.day, now.month, now.hour, now.minute, now.second)
     # Instantiate thread
-    capture_thread = Thread(target=cap.captureTraffic, args=(5, duration, dir, file))
+    capture_thread = Thread(target=cap.captureTraffic, args=(1, duration, dir, file))
     # Create five threads for streaming
     streaming_threads = []
     browsers = []
@@ -104,14 +104,14 @@ if __name__ == "__main__":
     #netflixpassword = os.environ["netflixpassword"]
     #hbouser = os.environ["hbouser"]
     #hbopassword = os.environ["hbopassword"]
-    #slack_token = os.environ['slack_token']
+    # slack_token = os.environ['slack_token']
     # Specify duration in seconds
-    duration = 30 * 1
+    duration = 60 * 1
     total_iterations = 1000
-    save_dir = 'D:\\Data'
-    chrome_profile_dir = 'C:\\Users\\salik\\AppData\\Local\\Google\\Chrome\\User Data\\Profile 3'
+    save_dir = '/home/mclrn/Data'
+    chrome_profile_dir = "/home/mclrn/.config/google-chrome/"
     options = webdriver.ChromeOptions()
     options.add_argument('user-data-dir=' + chrome_profile_dir)
 
-    generate_streaming(duration, save_dir, total_iterations, options)
+    generate_streaming(duration, save_dir, total_iterations)
     print("something")

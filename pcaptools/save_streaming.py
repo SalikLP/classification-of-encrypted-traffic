@@ -29,13 +29,22 @@ def save_streaming_task(files):
 
 
 if __name__ == "__main__":
-    dir = '../Data/'
+    dir = '../../Data/'
     session_threshold = 10000
 
+    h5files = []
+
+    for h5 in glob.iglob(dir+ 'h5/*.h5'):
+        h5files.append(os.path.basename(h5))
     # Load all files
     files = []
     for fullname in glob.iglob(dir + '*.pcap'):
-        files.append(fullname)
+        filename = os.path.basename(fullname)
+        h5name = filename +'.h5'
+        if h5name in h5files:
+            os.rename(fullname, dir + '/processed_pcap/' + filename)
+        else:
+            files.append(fullname)
 
     splits = 4
     files_splits = split_list(files,splits)
