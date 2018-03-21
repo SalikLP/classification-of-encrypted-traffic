@@ -1,7 +1,6 @@
 import time
 import pandas as pd
-from scapy.compat import raw
-from scapy.utils import rdpcap
+from scapy.all import *
 import glob
 import os
 import multiprocessing
@@ -47,6 +46,7 @@ def save_pcap_task(files, save_dir, session_threshold):
     '''
     for fullname in files:
         print('Currently saving file: ', fullname)
+
         save_pcap(fullname, save_dir, session_threshold)
 
 
@@ -81,7 +81,6 @@ def process_pcap_to_h5(read_dir, save_dir, session_threshold=5000):
         # create a thread for each
         t1 = multiprocessing.Process(target=save_pcap_task, args=(file_split, save_dir, session_threshold))
         t1.start()
-
 
 def save_pcap(fullname, save_dir, session_threshold=0):
     '''
@@ -173,19 +172,19 @@ def session_extractor(p):
             src = p[IP].src
             dst = p[IP].dst
             if NTP in p:
-                if src.startswith('10.'):
+                if src.startswith('10.') or src.startswith('192.168.'):
                     sess = p.sprintf("NTP %IP.src%:%r,UDP.sport% > %IP.dst%:%r,UDP.dport%")
-                elif dst.startswith('10.'):
+                elif dst.startswith('10.') or dst.startswith('192.168.'):
                     sess = p.sprintf("NTP %IP.dst%:%r,UDP.dport% > %IP.src%:%r,UDP.sport%")
             elif 'TCP' in p:
-                if src.startswith('10.'):
+                if src.startswith('10.') or src.startswith('192.168.'):
                     sess = p.sprintf("TCP %IP.src%:%r,TCP.sport% > %IP.dst%:%r,TCP.dport%")
-                elif dst.startswith('10.'):
+                elif dst.startswith('10.') or dst.startswith('192.168.'):
                     sess = p.sprintf("TCP %IP.dst%:%r,TCP.dport% > %IP.src%:%r,TCP.sport%")
             elif 'UDP' in p:
-                if src.startswith('10.'):
+                if src.startswith('10.') or src.startswith('192.168.'):
                     sess = p.sprintf("UDP %IP.src%:%r,UDP.sport% > %IP.dst%:%r,UDP.dport%")
-                elif dst.startswith('10.'):
+                elif dst.startswith('10.') or dst.startswith('192.168.'):
                     sess = p.sprintf("UDP %IP.dst%:%r,UDP.dport% > %IP.src%:%r,UDP.sport%")
             elif 'ICMP' in p:
                 sess = p.sprintf("ICMP %IP.src% > %IP.dst% type=%r,ICMP.type% code=%r,ICMP.code% id=%ICMP.id%")
