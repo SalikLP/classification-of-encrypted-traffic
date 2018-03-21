@@ -210,20 +210,27 @@ def extractdatapoints(dataframe, num_headers=15, session=True):
     return pd.DataFrame(data=d)
 
 
-def saveextractedheaders(train_dir, savename):
+def saveextractedheaders(load_dir, save_dir, savename, num_headers=15, session=True):
     """"
     Extracts datapoints from all .h5 files in train_dir and saves the them in a new .h5 file
+    :param load_dir: The directory to load from
+    :param save_dir: The directory to save the extracted headers
+    :param savename: The filename to save
+    :param num_headers: The amount of headers to use as datapoint
+    :param session: session or flow
     """
     dataframes = []
-    for fullname in glob.iglob(train_dir + '*.h5'):
+    for fullname in glob.iglob(load_dir + '*.h5'):
         filename = os.path.basename(fullname)
-        df = load_h5(train_dir, filename)
-        datapoints = extractdatapoints(df)
+        df = load_h5(load_dir, filename)
+        datapoints = extractdatapoints(df, num_headers, session)
         dataframes.append(datapoints)
     # create one large dataframe
     data = pd.concat(dataframes)
     key = savename.split('-')[0]
-    data.to_hdf(train_dir + 'extracted/' + savename + '.h5', key=key, mode='w')
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    data.to_hdf(save_dir + savename + '.h5', key=key, mode='w')
 
 
 # saveextractedheaders('./', 'extracted-0103_1136')
