@@ -1,9 +1,10 @@
-import time
 import pandas as pd
 from scapy.all import *
 import glob
 import os
 import multiprocessing
+
+from utils import split_list
 
 
 def pcap_cleaner(dir):
@@ -16,25 +17,6 @@ def pcap_cleaner(dir):
         dir, filename = os.path.split(fullname)
         command = 'tshark -r %s -2 -R "!(eth.dst[0]&1) && !(tcp.port==5901) && ip" -w %s/filtered/%s' % (fullname,dir, filename)
         os.system(command)
-
-
-def split_list(list, chunks):
-    '''
-    Takes a list an splits it to equal sized chunks.
-    :param list: list to split
-    :param chunks: number of chunks (int)
-    :return: a list containing chunks (lists) as elements
-    '''
-    avg = len(list) / float(chunks)
-    out = []
-    last = 0.0
-
-    while last < len(list):
-        out.append(list[int(last):int(last + avg)])
-        last += avg
-
-    return out
-
 
 
 def save_pcap_task(files, save_dir, session_threshold):
@@ -75,7 +57,7 @@ def process_pcap_to_h5(read_dir, save_dir, session_threshold=5000):
             files.append(fullname)
 
     splits = 4
-    files_splits = split_list(files,splits)
+    files_splits = split_list(files, splits)
 
     for file_split in files_splits:
         # create a thread for each

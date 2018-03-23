@@ -111,7 +111,7 @@ if __name__ == "__main__":
     save_dir = '/home/mclrn/Data'
     chrome_profile_dir = "/home/mclrn/.config/google-chrome/"
     options = webdriver.ChromeOptions()
-    options.add_argument('user-data-dir=' + chrome_profile_dir)
-
-    generate_streaming(duration, save_dir, total_iterations)
+    #options.add_argument('user-data-dir=' + chrome_profile_dir)
+    options.add_argument("--enable-quic")
+    generate_streaming(duration, save_dir, total_iterations, options)
     print("something")
