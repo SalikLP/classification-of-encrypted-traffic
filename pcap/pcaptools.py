@@ -7,11 +7,11 @@ import multiprocessing
 
 
 def pcap_cleaner(dir):
-    '''
+    """
     This method can be used for cleaning pcap files.
     :param dir: Directory containing the pcap files that should be filtered
     :return: None
-    '''
+    """
     for fullname in glob.iglob(dir + '*.pcap'):
         dir, filename = os.path.split(fullname)
         command = 'tshark -r %s -2 -R "!(eth.dst[0]&1) && !(tcp.port==5901) && ip" -w %s/filtered/%s' % (fullname,dir, filename)
@@ -19,12 +19,12 @@ def pcap_cleaner(dir):
 
 
 def split_list(list, chunks):
-    '''
+    """
     Takes a list an splits it to equal sized chunks.
     :param list: list to split
     :param chunks: number of chunks (int)
     :return: a list containing chunks (lists) as elements
-    '''
+    """
     avg = len(list) / float(chunks)
     out = []
     last = 0.0
@@ -36,30 +36,28 @@ def split_list(list, chunks):
     return out
 
 
-
 def save_pcap_task(files, save_dir, session_threshold):
-    '''
+    """
     This method takes all files in a list (full path names) and uses the method save_pcap that converts a pcap to h5 format
     :param files:
     :param session_threshold:
     :return:
-    '''
+    """
     for fullname in files:
         print('Currently saving file: ', fullname)
 
         save_pcap(fullname, save_dir, session_threshold)
 
 
-
 def process_pcap_to_h5(read_dir, save_dir, session_threshold=5000):
-    '''
+    """
     Use this method to process all pcap files in a directory to a h5 format.
     Session threshold is used to filter out all sessions containing fewer packets
     :param save_dir:
     :param read_dir: Directory containing pcap files that should be converted into h5 format
     :param session_threshold: Threshold to filter out session with less packets
     :return: None
-    '''
+    """
     h5files = []
 
     for h5 in glob.iglob(save_dir + '*.h5'):
@@ -82,14 +80,15 @@ def process_pcap_to_h5(read_dir, save_dir, session_threshold=5000):
         t1 = multiprocessing.Process(target=save_pcap_task, args=(file_split, save_dir, session_threshold))
         t1.start()
 
+
 def save_pcap(fullname, save_dir, session_threshold=0):
-    '''
+    """
     This method read a pcap file and saves it to an h5 dataframe.
     The file is overwritten if it already exists.
     :param dir: The folder containing the pcap file
     :param filename: The name of the pcap file
     :return: Nothing
-    '''
+    """
     dir_n, filename = os.path.split(fullname)
     df = read_pcap(fullname, filename, session_threshold)
     key = filename.split('-')[0]
@@ -97,7 +96,7 @@ def save_pcap(fullname, save_dir, session_threshold=0):
 
 
 def read_pcap(fullname, filename, session_threshold=0):
-    '''
+    """
     This method will extract the packets of the major session within the pcap file. It will label the packets according
     to the filename.
     The method excludes packets between local/internal ip adresses (ip.src and ip.dst startswith 10.....)
@@ -108,7 +107,7 @@ def read_pcap(fullname, filename, session_threshold=0):
     :param dir: The directory in which the pcap file is located. Should end with a /
     :param filename: The name of the pcap file. It is expected to contain the label of the data before the first - char
     :return: A dataframe containing the extracted packets.
-    '''
+    """
     time_s = time.clock()
     label = filename.split('-')[0]
     print("Read PCAP, label is %s" % label)
@@ -166,6 +165,11 @@ def read_pcap(fullname, filename, session_threshold=0):
 
 
 def session_extractor(p):
+    """
+    Custom session extractor to use for scapy to group bi directional sessions instead of a uni directional flows.
+    :param p: packet as used by scapy
+    :return: session string to use a key in dict
+    """
     sess = "Other"
     if 'Ether' in p:
         if 'IP' in p:
