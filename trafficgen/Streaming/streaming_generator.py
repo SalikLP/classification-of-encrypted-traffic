@@ -1,3 +1,5 @@
+import sys
+sys.path.insert(0, "/home/mclrn/dlproject/")
 import datetime
 from threading import Thread
 from selenium import webdriver
@@ -11,9 +13,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 import unix_capture as cap
 import streaming_types as stream
+from constants import SLACK_TOKEN
 
 def notifySlack(message):
-    sc = SlackClient(slack_token)
+    sc = SlackClient(SLACK_TOKEN)
     try:
         sc.api_call("chat.postMessage", channel="#server", text=message)
     except:
@@ -23,13 +26,14 @@ def notifySlack(message):
 def generate_streaming(duration, dir, total_iterations, chrome_options=None):
     iterations = 0
     while iterations < total_iterations:
+        print("Iteration:", iterations)
         streaming_threads = []
         file =''
         try:
             if iterations % 2 == 0:
-                browsers, capture_thread, file, streaming_threads = generate_threaded_streaming(stream.Twitch, "twitch", dir, duration, chrome_options, num_threads=10)
-            else:
                 browsers, capture_thread, file, streaming_threads = generate_threaded_streaming(stream.Youtube, "youtube", dir, duration, chrome_options, num_threads=10)
+            else:
+                browsers, capture_thread, file, streaming_threads = generate_threaded_streaming(stream.Twitch, "twitch", dir, duration, chrome_options, num_threads=10)
         except Exception as ex:
             notifySlack("Something went wrong when setting up the threads \n %s" % traceback.format_exc())
 
@@ -113,5 +117,6 @@ if __name__ == "__main__":
     options = webdriver.ChromeOptions()
     #options.add_argument('user-data-dir=' + chrome_profile_dir)
     options.add_argument("--enable-quic")
+    # options.add_argument('headless')
     generate_streaming(duration, save_dir, total_iterations, options)
     print("something")
