@@ -5,6 +5,7 @@ from threading import Thread
 from selenium import webdriver
 from slackclient import SlackClient
 import traceback
+import os
 from selenium.webdriver.support.ui import WebDriverWait
 
 
@@ -27,7 +28,9 @@ def generate_streaming(duration, dir, total_iterations, chrome_options=None):
     iterations = 0
     while iterations < total_iterations:
         print("Iteration:", iterations)
-        streaming_threads = []
+        if iterations % 25 == 0:
+            notifySlack("Starting iteration: " + str(iterations))
+        browsers, capture_thread, file, streaming_threads, = [], [], [], []
         file =''
         try:
             if iterations % 2 == 0:
@@ -45,9 +48,9 @@ def generate_streaming(duration, dir, total_iterations, chrome_options=None):
             print("streaming started")
             capture_thread.join() # Stream until the capture thread joins
             print("capture done - thread has joined")
-            for browser in browsers:
-            #    clear_cache(browser)
-                browser.close()
+            # for browser in browsers:
+            # #    clear_cache(browser)
+            #     browser.close()
 
         except Exception as e:
             notifySlack("Something went wrong %s" % traceback.format_exc())
@@ -55,10 +58,15 @@ def generate_streaming(duration, dir, total_iterations, chrome_options=None):
             capture_thread.join()
             # Do a cleanup since somthing went wrong
             cap.cleanup(file)
+            # for browser in browsers:
+            #     browser.close()
+        try:
             for browser in browsers:
-                browser.close()
-        for browser in browsers:
-            browser.quit()
+                browser.quit()
+        except Exception as e:
+            notifySlack("Something went wrong %s" % traceback.format_exc())
+            os.system("killall chrome")
+            os.system("killall chromedriver")
         iterations += 1
 
 
