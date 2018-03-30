@@ -7,6 +7,7 @@ now = datetime.datetime.now()
 subdir = "/%.2d%.2d_%.2d%.2d" % (now.day, now.month, now.hour, now.minute)
 summaries_dir = '../tensorboard'
 dir = '../../Data/h5/extracted/'
+save_dir = "../trained_models/"
 
 input_size = 810
 data = dataset.read_data_sets(dir, one_hot=True, validation_size=0.1, test_size=0.1, balance_classes=False,
@@ -83,7 +84,7 @@ with tf.Session() as sess:
     train_writer.add_graph(sess.graph)
     sess.run(tf.global_variables_initializer())
     print('Begin training loop')
-
+    saver = tf.train.Saver()
     try:
         while data.train.epochs_completed < max_epochs:
             _train_loss, _train_accuracy = [], []
@@ -131,13 +132,15 @@ with tf.Session() as sess:
             # test_writer.add_summary(_summary, data.train.epochs_completed)
         print('Test Loss {:6.3f}, Test acc {:6.3f}'.format(
             np.mean(test_loss), np.mean(test_accuracy)))
-
+        saver.save(sess, save_dir+'header_50_units.ckpt')
 
     except KeyboardInterrupt:
         pass
 
 
 print(cm)
+
+
 #
 # # df = utils.load_h5(dir + filename+'.h5', key=filename.split('-')[0])
 # # print("Load done!")
