@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 # lowest = -1.0
 lowest = 0.0
-highest = 255.0
+highest = 1.0
 
 # --------------------------------------
 # Color maps ([-1,1] -> [0,1]^3)
@@ -60,17 +60,17 @@ def visualize(x,colormap,name):
 def plt_vector(x, colormap, title):
     N = len(x)
     assert (N <= 16)
-    first_axis = 54
-    second_axis = 15
+    len_x = 54
+    len_y = 15
     # size = int(np.ceil(np.sqrt(len(x[0]))))
-    length = first_axis*second_axis
+    length = len_y*len_x
     data = np.zeros((N, length), dtype=np.float64)
     data[:, :x.shape[1]] = x
     data = colormap(data / np.abs(data).max())
     # data = data.reshape([1, N, size, size, 3])
-    data = data.reshape([1, N, first_axis, second_axis, 3])
+    data = data.reshape([1, N, len_y, len_x, 3])
     # data = np.pad(data, ((0, 0), (0, 0), (2, 2), (2, 2), (0, 0)), 'constant', constant_values=1)
-    data = data.transpose([0, 2, 1, 3, 4]).reshape([1 * (first_axis), N * (second_axis), 3])
+    data = data.transpose([0, 2, 1, 3, 4]).reshape([1 * (len_y), N * (len_x), 3])
     # data = np.kron(data, np.ones([2, 2, 1])) # scales
     fig = plt.figure()
     ax = fig.add_subplot(111)

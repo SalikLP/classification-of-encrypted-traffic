@@ -20,7 +20,7 @@ def plotNNFilter(units):
 dir = '../../Data/h5/extracted/'
 input_size = 810
 data = dataset.read_data_sets(dir, one_hot=True, validation_size=0.1, test_size=0.1, balance_classes=False,
-                              payload_length=input_size)
+                              payload_length=input_size, seed=1234)
 load_dir = "../trained_models/"
 model_name = "header_50_units.ckpt"
 sess = tf.Session()
@@ -39,7 +39,10 @@ W1 = graph.get_tensor_by_name("layer1/W:0")
 b1 = graph.get_tensor_by_name("layer1/b:0")
 W_out = graph.get_tensor_by_name("output_layer/W:0")
 b_out = graph.get_tensor_by_name("output_layer/b:0")
-X, T = data.test.next_batch(1)
+X, T = data.test.next_batch(1, shuffle=False)
+classes = np.array(dataset._label_encoder.classes_)
+classname = classes[np.argmax(T)]
+
 # vis_utils.visualize(X, vis_utils.graymap, 'data.png')
 l1_weights, l1_biases, out_weights, out_biases = sess.run([W1, b1, W_out, b_out])
 # X, T = vis_utils.getMNISTsample(N=12, path='C:\\Users\\Salik\\Documents\\classification-of-encrypted-traffic', seed=1234)
@@ -50,8 +53,8 @@ Y = nn.forward(X)
 S = nn.gradprop(T)**2
 D = nn.relprop(Y*T)
 
-vis_utils.plt_vector(S, vis_utils.heatmap, "Sensitivity")
-vis_utils.plt_vector(D, vis_utils.heatmap, "Relevance")
+vis_utils.plt_vector(S, vis_utils.heatmap, "Sensitivity for {0}".format(classname))
+vis_utils.plt_vector(D, vis_utils.heatmap, "Relevance for {0}".format(classname))
 plt.show()
 print("Done")
 # vis_utils.visualize(S, vis_utils.heatmap, 'sensitivity.png')
