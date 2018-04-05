@@ -24,24 +24,41 @@ class Conf(object):
                     'tail /etc/hosts', 'tail /etc/passwd', 'tail /etc/fstab',
                     'cat /var/log/messages', 'cat /etc/group', 'cat /etc/mtab']
 
-    # urls the http generator will randomly fetch from
-    https_urls = ['https://www.dr.dk/', 'https://da.wikipedia.org/wiki/Forside',
-                  'https://en.wikipedia.org/wiki/Main_Page', 'https://www.dk-hostmaster.dk/',
-                  'https://www.cph.dk/', 'https://translate.google.com/', 'https://www.borger.dk/',
-                  'https://www.sdu.dk/da/', 'https://www.sundhed.dk/', 'https://www.facebook.com/',
-                  'https://www.ug.dk/', 'https://erhvervsstyrelsen.dk/', 'https://www.nets.eu/dk-da',
-                  'https://www.jobindex.dk/', 'https://www.rejseplanen.dk/webapp/index.html', 'https://yousee.dk/',
-                  'https://www.sparnord.dk/', 'https://gigahost.dk/', 'https://www.information.dk/',
-                  'https://stps.dk/', 'https://www.skat.dk/', 'https://danskebank.dk/privat', 'https://www.sst.dk/']
+    # # urls the http generator will randomly fetch from
+    # https_urls = ['https://www.dr.dk/', 'https://da.wikipedia.org/wiki/Forside',
+    #               'https://en.wikipedia.org/wiki/Main_Page', 'https://www.dk-hostmaster.dk/',
+    #               'https://www.cph.dk/', 'https://translate.google.com/', 'https://www.borger.dk/',
+    #               'https://www.sdu.dk/da/', 'https://www.sundhed.dk/', 'https://www.facebook.com/',
+    #               'https://www.ug.dk/', 'https://erhvervsstyrelsen.dk/', 'https://www.nets.eu/dk-da',
+    #               'https://www.jobindex.dk/', 'https://www.rejseplanen.dk/webapp/index.html', 'https://yousee.dk/',
+    #               'https://www.sparnord.dk/', 'https://gigahost.dk/', 'https://www.information.dk/',
+    #               'https://stps.dk/', 'https://www.skat.dk/', 'https://danskebank.dk/privat', 'https://www.sst.dk/']
 
-    http_urls = ['http://naturstyrelsen.dk/', 'http://www.valutakurser.dk/', 'http://ordnet.dk/ddo/forside',
-                 'http://www.speedtest.net/', 'http://bygningsreglementet.dk/', 'http://www.ft.dk/', 'http://tv2.dk/',
-                 'http://www.kl.dk/', 'http://www.symbiosis.dk/', 'http://www.noegletal.dk/',
-                 'http://novonordiskfonden.dk/da', 'http://frida.fooddata.dk/',
-                 'http://www.arbejdsmiljoforskning.dk/da', 'http://www.su.dk/', 'http://www.trafikstyrelsen.dk/da.aspx',
-                 'http://www.regioner.dk/', 'http://www.geus.dk/UK/Pages/default.aspx', 'http://bm.dk/',
-                 'http://www.m.dk/#!/', 'http://www.regionsjaelland.dk/Sider/default.aspx',
-                 'http://www.trafikstyrelsen.dk/da.aspx']
+    # http_urls = ['http://naturstyrelsen.dk/', 'http://www.valutakurser.dk/', 'http://ordnet.dk/ddo/forside',
+    #              'http://www.speedtest.net/', 'http://bygningsreglementet.dk/', 'http://www.ft.dk/', 'http://tv2.dk/',
+    #              'http://www.kl.dk/', 'http://www.symbiosis.dk/', 'http://www.noegletal.dk/',
+    #              'http://novonordiskfonden.dk/da', 'http://frida.fooddata.dk/',
+    #              'http://www.arbejdsmiljoforskning.dk/da', 'http://www.su.dk/', 'http://www.trafikstyrelsen.dk/da.aspx',
+    #              'http://www.regioner.dk/', 'http://www.geus.dk/UK/Pages/default.aspx', 'http://bm.dk/',
+    #              'http://www.m.dk/#!/', 'http://www.regionsjaelland.dk/Sider/default.aspx',
+    #              'http://www.trafikstyrelsen.dk/da.aspx']
+        # urls the http generator will randomly fetch from
+    https_urls = ['https://da.wikipedia.org/wiki/HTTPS', 'https://en.wikipedia.org/wiki/HTTPS',
+                  'https://www.instantssl.com/ssl-certificate-products/https.html','https://www.grammatip.com/',
+                  'https://meebook.com/', 'https://www.netproever.dk/', 'https://da-dk.facebook.com/', 'https://profil.yousee.dk/', 
+                  'https://www.minuddannelse.net/Home/Forside#ATHS', 'https://translate.google.com/?hl=da', 'https://www.borger.dk/',
+                  'https://sdfekort.dk/spatialmap', 'https://ordbog.gyldendal.dk/', 'https://ucpraktikportal.dk', 
+                  'https://www.dr.dk/tv/live/dr1', 'https://scholar.google.dk/', 'https://minlaering.dk/', 'https://webtv.stofa.dk/', \
+                  'https://hbdansk.systime.dk/', 'https://danskebank.dk/privat', 'https://www.sdu.dk/da']
+
+    http_urls = ['http://www2.hm.com/da_dk/index.html', 'http://www.euroinvestor.dk/', 'http://tv2.dk/',
+                 'http://vejr.tv2.dk/', 'http://bygningsreglementet.dk/', 'http://litteraturlisteautomaten.dk/', 'http://www.su.dk/',
+                 'http://www.regionsjaelland.dk/Sider/default.aspx', 'http://live.rideforbund.dk/', 'http://engelsk.gyldendal.dk/',
+                 'http://www.trafikstyrelsen.dk/da.aspx', 'http://www.regioner.dk/',
+                 'http://denstoredanske.dk/', 'http://library.au.dk/', 'http://www.kl.dk/',
+                 'http://www.windpower.org/', 'http://cdon.dk/', 'http://ordnet.dk/ddo/forside',
+                 'http://nyheder.tv2.dk/', 'http://ni.dk/',
+                 'http://ddd.dda.dk/', 'http://www.ft.dk/']
     # http_intern = ['http://web.intern.ndsec']
 
     # a number of files that will randomly be used for ftp upload
@@ -73,8 +90,8 @@ class Conf(object):
               # http (extern)
               # ('http_gen', [(12, 0), (12, 30), (5, 0)], [http_extern, 10, 20]),
               # ('http_gen', [(9, 0), (17, 0), (30, 0)], [http_extern, 5, 30]),
-              ('http_gen', [(11, 0), (13, 0), (0, 10)], [http_urls, 1, 5]),
-              ('http_gen', [(11, 0), (13, 0), (0, 10)], [https_urls, 1, 5]),
+              ('http_gen', [(19, 45), (21, 45), (0, 10)], [http_urls, 1, 5]),
+              ('http_gen', [(19, 45), (21, 45), (0, 10)], [https_urls, 1, 5]),
               # ('http_gen', [(9, 0), (17, 0), (90, 0)], [http_extern, 10, 30]),
               # ('http_gen', [(12, 0), (12, 10), (5, 0)], [http_extern, 15, 20]),
               #

@@ -55,7 +55,7 @@ def process_pcap_to_h5(read_dir, save_dir, session_threshold=5000):
         else:
             files.append(fullname)
 
-    splits = 4
+    splits = 3
     files_splits = split_list(files, splits)
 
     for file_split in files_splits:

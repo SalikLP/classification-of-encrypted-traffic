@@ -79,7 +79,7 @@ def filter_pcap_by_ip(dir, filename, ip_list, label):
 
 def load_h5(dir, filename):
     timeS = time.clock()
-    df = pd.read_hdf(dir + filename, key=filename.split('-')[0])
+    df = pd.read_hdf(dir + '/' + filename, key=filename.split('-')[0])
     timeE = time.clock()
     loadTime = timeE-timeS
     print("Time to load " + filename + ": " + str(loadTime))
@@ -235,7 +235,7 @@ def saveextractedheaders(load_dir, save_dir, savename, num_headers=15, session=T
     """
     manager = multiprocessing.Manager()
     dataframes = manager.list()
-    filelist = glob.iglob(load_dir + '*.h5')
+    filelist = glob.glob(load_dir + '*.h5')
     filesplits = split_list(filelist,4)
 
     threads = []
