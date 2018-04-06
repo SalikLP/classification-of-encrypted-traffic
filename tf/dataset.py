@@ -179,7 +179,9 @@ def read_data_sets(train_dir,
     train_payloads = payloads[(validation_amount + test_amount):]
     train_labels = labels[(validation_amount + test_amount):]
     options = dict(dtype=dtype, seed=seed)
-
+    print("Training set size: {0}".format(len(train_payloads)))
+    print("Validation set size: {0}".format(len(val_payloads)))
+    print("Test set size: {0}".format(len(test_payloads)))
     train = DataSet(train_payloads, train_labels, **options)
     validation = DataSet(val_payloads, val_labels, **options)
     test = DataSet(test_payloads, test_labels, **options)

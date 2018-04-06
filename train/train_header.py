@@ -6,12 +6,14 @@ import datetime
 now = datetime.datetime.now()
 subdir = "/%.2d%.2d_%.2d%.2d" % (now.day, now.month, now.hour, now.minute)
 summaries_dir = '../tensorboard'
-dir = '../../Data/h5/extracted/'
+num_headers = 8
+hidden_units = 50
+dir = '../../Data/h5/extracted/{0}/'.format(num_headers)
 save_dir = "../trained_models/"
 
-input_size = 810
-data = dataset.read_data_sets(dir, one_hot=True, validation_size=0.1, test_size=0.1, balance_classes=False,
-                              payload_length=input_size, num_headers=15)
+input_size = num_headers*54
+data = dataset.read_data_sets(dir, one_hot=True, validation_size=0.05, test_size=0.05, balance_classes=False,
+                              payload_length=input_size)
 tf.reset_default_graph()
 num_classes = len(dataset._label_encoder.classes_)
 
@@ -22,7 +24,8 @@ x_pl = tf.placeholder(tf.float32, [None, input_size], name='xPlaceholder')
 y_pl = tf.placeholder(tf.float64, [None, num_classes], name='yPlaceholder')
 y_pl = tf.cast(y_pl, tf.float32)
 
-x = tfu.ffn_layer('layer1', x_pl, 50, activation=tf.nn.relu)
+x = tfu.ffn_layer('layer1', x_pl, hidden_units, activation=tf.nn.relu)
+# x = tfu.ffn_layer('layer2', x, hidden_units, activation=tf.nn.relu)
 # x = tfu.ffn_layer('layer2', x, 50, activation=tf.nn.sigmoid)
 # x = tfu.ffn_layer('layer3', x, 730, activation=tf.nn.relu)
 y = tfu.ffn_layer('output_layer', x, hidden_units=num_classes, activation=tf.nn.softmax)
@@ -74,7 +77,7 @@ test_writer = tf.summary.FileWriter(summaries_dir + '/test/' + subdir)
 
 # Training Loop
 batch_size = 100
-max_epochs = 10
+max_epochs = 20
 
 valid_loss, valid_accuracy = [], []
 train_loss, train_accuracy = [], []
@@ -132,7 +135,7 @@ with tf.Session() as sess:
             # test_writer.add_summary(_summary, data.train.epochs_completed)
         print('Test Loss {:6.3f}, Test acc {:6.3f}'.format(
             np.mean(test_loss), np.mean(test_accuracy)))
-        saver.save(sess, save_dir+'header_50_units.ckpt')
+        saver.save(sess, save_dir+'header_{0}_{1}_units.ckpt'.format(num_headers, hidden_units))
 
     except KeyboardInterrupt:
         pass

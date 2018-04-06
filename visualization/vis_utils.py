@@ -57,11 +57,11 @@ def visualize(x,colormap,name):
     PIL.Image.fromarray((x*255).astype('byte'), 'RGB').save(name)
 
 
-def plt_vector(x, colormap, title):
+def plt_vector(x, colormap, num_headers):
     N = len(x)
     assert (N <= 16)
     len_x = 54
-    len_y = 15
+    len_y = num_headers
     # size = int(np.ceil(np.sqrt(len(x[0]))))
     length = len_y*len_x
     data = np.zeros((N, length), dtype=np.float64)
@@ -71,11 +71,16 @@ def plt_vector(x, colormap, title):
     data = data.reshape([1, N, len_y, len_x, 3])
     # data = np.pad(data, ((0, 0), (0, 0), (2, 2), (2, 2), (0, 0)), 'constant', constant_values=1)
     data = data.transpose([0, 2, 1, 3, 4]).reshape([1 * (len_y), N * (len_x), 3])
+    return data
     # data = np.kron(data, np.ones([2, 2, 1])) # scales
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.imshow(data, interpolation='nearest')
-    ax.set_title(title)
 
+
+def add_subplot(data, num_plots, plot_index, title, figure):
+    fig = figure
+    ax = fig.add_subplot(num_plots, 1, plot_index)
+    cax = ax.imshow(data, interpolation='nearest', aspect='auto')
+    # cbar = fig.colorbar(cax, ticks=[0, 1])
+    # cbar.ax.set_yticklabels(['0', '> 1'])  # vertically oriented colorbar
+    ax.set_title(title)
 
 
