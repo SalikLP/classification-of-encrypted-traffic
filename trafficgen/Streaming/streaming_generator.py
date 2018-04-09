@@ -1,8 +1,11 @@
+import sys
+sys.path.insert(0, "/home/mclrn/dlproject/")
 import datetime
 from threading import Thread
 from selenium import webdriver
 from slackclient import SlackClient
 import traceback
+import os
 from selenium.webdriver.support.ui import WebDriverWait
 
 
@@ -11,9 +14,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 import unix_capture as cap
 import streaming_types as stream
+from constants import SLACK_TOKEN
 
 def notifySlack(message):
-    sc = SlackClient(slack_token)
+    sc = SlackClient(SLACK_TOKEN)
     try:
         sc.api_call("chat.postMessage", channel="#server", text=message)
     except:
@@ -23,13 +27,16 @@ def notifySlack(message):
 def generate_streaming(duration, dir, total_iterations, chrome_options=None):
     iterations = 0
     while iterations < total_iterations:
-        streaming_threads = []
+        print("Iteration:", iterations)
+        if iterations % 25 == 0:
+            notifySlack("Starting iteration: " + str(iterations))
+        browsers, capture_thread, file, streaming_threads, = [], [], [], []
         file =''
         try:
             if iterations % 2 == 0:
-                browsers, capture_thread, file, streaming_threads = generate_threaded_streaming(stream.Twitch, "twitch", dir, duration, chrome_options, num_threads=10)
-            else:
                 browsers, capture_thread, file, streaming_threads = generate_threaded_streaming(stream.Youtube, "youtube", dir, duration, chrome_options, num_threads=10)
+            else:
+                browsers, capture_thread, file, streaming_threads = generate_threaded_streaming(stream.Twitch, "twitch", dir, duration, chrome_options, num_threads=10)
         except Exception as ex:
             notifySlack("Something went wrong when setting up the threads \n %s" % traceback.format_exc())
 
@@ -41,9 +48,9 @@ def generate_streaming(duration, dir, total_iterations, chrome_options=None):
             print("streaming started")
             capture_thread.join() # Stream until the capture thread joins
             print("capture done - thread has joined")
-            for browser in browsers:
-            #    clear_cache(browser)
-                browser.close()
+            # for browser in browsers:
+            # #    clear_cache(browser)
+            #     browser.close()
 
         except Exception as e:
             notifySlack("Something went wrong %s" % traceback.format_exc())
@@ -51,10 +58,15 @@ def generate_streaming(duration, dir, total_iterations, chrome_options=None):
             capture_thread.join()
             # Do a cleanup since somthing went wrong
             cap.cleanup(file)
+            # for browser in browsers:
+            #     browser.close()
+        try:
             for browser in browsers:
-                browser.close()
-        for browser in browsers:
-            browser.quit()
+                browser.quit()
+        except Exception as e:
+            notifySlack("Something went wrong %s" % traceback.format_exc())
+            os.system("killall chrome")
+            os.system("killall chromedriver")
         iterations += 1
 
 
@@ -111,7 +123,8 @@ if __name__ == "__main__":
     save_dir = '/home/mclrn/Data'
     chrome_profile_dir = "/home/mclrn/.config/google-chrome/"
     options = webdriver.ChromeOptions()
-    options.add_argument('user-data-dir=' + chrome_profile_dir)
-
-    generate_streaming(duration, save_dir, total_iterations)
+    #options.add_argument('user-data-dir=' + chrome_profile_dir)
+    options.add_argument("--enable-quic")
+    # options.add_argument('headless')
+    generate_streaming(duration, save_dir, total_iterations, options)
     print("something")

@@ -1,3 +1,5 @@
+import multiprocessing
+
 from scapy.all import *
 import matplotlib.pyplot as plt
 import numpy as np
@@ -134,16 +136,6 @@ def pad_arrays_with_zero(payloads, payload_length=810):
 def hash_elements(payloads):
     return payloads
 
-def plotNNFilter(units):
-    filters = units.shape[3]
-    plt.figure(1, figsize=(20, 20))
-    n_columns = 6
-    n_rows = math.ceil(filters / n_columns) + 1
-    for i in range(filters):
-        plt.subplot(n_rows, n_columns, i+1)
-        plt.title('Filter ' + str(i))
-        plt.imshow(units[0, :, :, i], interpolation="nearest", cmap="gray")
-
 
 def packetanonymizer(packet):
     """"
@@ -193,7 +185,7 @@ def extractdatapoints(dataframe, num_headers=15, session=True):
         for i in range(num_headers):
             p = packets[i]
             p_an = packetanonymizer(p)
-            protocol = v['protocol'].iloc[0]
+            protocol = v['protocol'].iloc[0] # assuming a session utilize the same protocol throughout
             # Extract headers (TCP = 54 Bytes, UDP = 42 Bytes - Maybe + 4 Bytes for VLAN tagging) from x first packets of session/flow
             if protocol == 'TCP':
                 # TCP
@@ -209,22 +201,65 @@ def extractdatapoints(dataframe, num_headers=15, session=True):
     d = {'bytes': data_points, 'label': labels}
     return pd.DataFrame(data=d)
 
+def saveheaderstask(filelist, num_headers, session, dataframes):
+    datapointslist = []
+    for fullname in filelist:
+        load_dir, filename = os.path.split(fullname)
+        df = load_h5(load_dir, filename)
+        datapoints = extractdatapoints(df, num_headers, session)
+        datapointslist.append(datapoints)
 
-def saveextractedheaders(train_dir, savename):
+    # Extend the shared dataframe
+    dataframes.extend(datapointslist)
+
+
+
+def saveextractedheaders(load_dir, save_dir, savename, num_headers=15, session=True):
     """"
     Extracts datapoints from all .h5 files in train_dir and saves the them in a new .h5 file
+    :param load_dir: The directory to load from
+    :param save_dir: The directory to save the extracted headers
+    :param savename: The filename to save
+    :param num_headers: The amount of headers to use as datapoint
+    :param session: session or flow
     """
-    dataframes = []
-    for fullname in glob.iglob(train_dir + '*.h5'):
-        filename = os.path.basename(fullname)
-        df = load_h5(train_dir, filename)
-        datapoints = extractdatapoints(df)
-        dataframes.append(datapoints)
+    manager = multiprocessing.Manager()
+    dataframes = manager.list()
+    filelist = glob.iglob(load_dir + '*.h5')
+    filesplits = split_list(filelist,4)
+
+    threads = []
+    for split in filesplits:
+        # create a thread for each
+        t = multiprocessing.Process(target=saveheaderstask, args=(split, num_headers, session, dataframes))
+        threads.append(t)
+        t.start()
     # create one large dataframe
+
+    for t in threads:
+        t.join()
     data = pd.concat(dataframes)
     key = savename.split('-')[0]
-    data.to_hdf(train_dir + 'extracted/' + savename + '.h5', key=key, mode='w')
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    data.to_hdf(save_dir + savename + '.h5', key=key, mode='w')
 
 
 # saveextractedheaders('./', 'extracted-0103_1136')
 # read_pcap('../Data/', 'drtv-2302_1031')
+def split_list(list, chunks):
+    '''
+    Takes a list an splits it to equal sized chunks.
+    :param list: list to split
+    :param chunks: number of chunks (int)
+    :return: a list containing chunks (lists) as elements
+    '''
+    avg = len(list) / float(chunks)
+    out = []
+    last = 0.0
+
+    while last < len(list):
+        out.append(list[int(last):int(last + avg)])
+        last += avg
+
+    return out
