@@ -1,7 +1,6 @@
 import time
 import pandas as pd
-from scapy.compat import raw
-from scapy.utils import rdpcap
+from scapy.all import *
 import glob
 import os
 import multiprocessing
