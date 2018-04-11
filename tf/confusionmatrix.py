@@ -39,7 +39,8 @@ class ConfusionMatrix:
             else:
                 pad = ""
             class_name = self.class_names[idx]
-            class_name = " " + class_name + " |"
+            class_name = " {:10s}".format(class_name)
+            class_name += " |"
             row_str = class_name + pad + row
             row_str += " |" + str(col_sum[idx])
             s.append(row_str)

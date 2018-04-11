@@ -6,14 +6,20 @@ import datetime
 now = datetime.datetime.now()
 subdir = "/%.2d%.2d_%.2d%.2d" % (now.day, now.month, now.hour, now.minute)
 summaries_dir = '../tensorboard'
-num_headers = 8
+num_headers = 16
 hidden_units = 50
-dir = '../../Data/h5/extracted/{0}/'.format(num_headers)
+train_dir = '/home/mclrn/Data/windows/no_checksum/{0}/'.format(num_headers)
+test_dir = '/home/mclrn/Data/linux/no_checksum/{0}/'.format(num_headers)
 save_dir = "../trained_models/"
+seed = 0
+
+# Beta for L2 regularization
+beta = 1.0
 
 input_size = num_headers*54
-data = dataset.read_data_sets(dir, one_hot=True, validation_size=0.05, test_size=0.05, balance_classes=False,
-                              payload_length=input_size)
+data = dataset.read_data_sets(train_dir, test_dir, merge_data=False, one_hot=True, validation_size=0.1, test_size=0.2,
+                              balance_classes=False,
+                              payload_length=input_size, seed=seed)
 tf.reset_default_graph()
 num_classes = len(dataset._label_encoder.classes_)
 
@@ -24,11 +30,13 @@ x_pl = tf.placeholder(tf.float32, [None, input_size], name='xPlaceholder')
 y_pl = tf.placeholder(tf.float64, [None, num_classes], name='yPlaceholder')
 y_pl = tf.cast(y_pl, tf.float32)
 
-x = tfu.ffn_layer('layer1', x_pl, hidden_units, activation=tf.nn.relu)
+x = tfu.ffn_layer('layer1', x_pl, hidden_units, activation=tf.nn.relu, seed=seed)
+# x = tf.layers.dense(x_pl, hidden_units, tf.nn.relu)
+# x = tfu.dropout(x, 0.5)
 # x = tfu.ffn_layer('layer2', x, hidden_units, activation=tf.nn.relu)
 # x = tfu.ffn_layer('layer2', x, 50, activation=tf.nn.sigmoid)
 # x = tfu.ffn_layer('layer3', x, 730, activation=tf.nn.relu)
-y = tfu.ffn_layer('output_layer', x, hidden_units=num_classes, activation=tf.nn.softmax)
+y = tfu.ffn_layer('output_layer', x, hidden_units=num_classes, activation=tf.nn.softmax, seed=seed)
 
 # with tf.name_scope('cross_entropy'):
 #   # The raw formulation of cross-entropy,
@@ -48,8 +56,11 @@ with tf.variable_scope('loss'):
     # computing cross entropy per sample
     cross_entropy = -tf.reduce_sum(y_pl * tf.log(y + 1e-8), reduction_indices=[1])
 
+    W1 = tf.get_default_graph().get_tensor_by_name("layer1/W:0")
+    loss = tf.nn.l2_loss(W1)
     # averaging over samples
     cross_entropy = tf.reduce_mean(cross_entropy)
+    loss = tf.reduce_mean(cross_entropy + loss * beta)
 
 tf.summary.scalar('cross_entropy', cross_entropy)
 
@@ -123,6 +134,7 @@ with tf.Session() as sess:
                         valid_accuracy[-1]))
         test_epoch = data.test.epochs_completed
         while data.test.epochs_completed == test_epoch:
+            batch_size = 1000
             x_batch, y_batch = data.test.next_batch(batch_size)
             feed_dict_test = {x_pl: x_batch, y_pl: y_batch}
             _loss, _acc, _summary = sess.run(fetches_valid, feed_dict_test)

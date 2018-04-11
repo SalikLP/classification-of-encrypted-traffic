@@ -127,7 +127,8 @@ def extract_labels(dataframe, one_hot=False, num_classes=10):
     return labels
 
 
-def read_data_sets(train_dir,
+def read_data_sets(train_dir, test_dir,
+                   merge_data=True,
                    one_hot=False,
                    dtype=dtypes.float32,
                    validation_size=0.2,
@@ -135,49 +136,65 @@ def read_data_sets(train_dir,
                    seed=None,
                    balance_classes=False,
                    payload_length=810):
-    dataframes = []
+    trainframes = []
+    testframes = []
     for fullname in glob.iglob(train_dir + '*.h5'):
         filename = os.path.basename(fullname)
         df = utils.load_h5(train_dir, filename)
-        dataframes.append(df)
+        trainframes.append(df)
     # create one large dataframe
-    data = pd.concat(dataframes)
-    num_classes = len(data['label'].unique())
+    train_data = pd.concat(trainframes)
+
+    for fullname in glob.iglob(test_dir + '*.h5'):
+        filename = os.path.basename(fullname)
+        df = utils.load_h5(test_dir, filename)
+        testframes.append(df)
+    test_data = pd.concat(testframes)
+
+    if merge_data:
+        train_data = pd.concat([test_data, train_data])
+
+    num_classes = len(train_data['label'].unique())
 
     if balance_classes:
-        values, counts = np.unique(data['label'], return_counts=True)
+        values, counts = np.unique(train_data['label'], return_counts=True)
         smallest_class = np.argmin(counts)
         amount = counts[smallest_class]
         new_data = []
         for v in values:
-            sample = data.loc[data['label'] == v].sample(n=amount)
+            sample = train_data.loc[train_data['label'] == v].sample(n=amount)
             new_data.append(sample)
-        data = new_data
-        data = pd.concat(data)
+        train_data = new_data
+        train_data = pd.concat(train_data)
 
     # shuffle the dataframe and reset the index
-    data = data.sample(frac=1, random_state=seed).reset_index(drop=True)
-    labels = extract_labels(data, one_hot=one_hot, num_classes=num_classes)
-    payloads = data['bytes'].values
-
+    train_data = train_data.sample(frac=1, random_state=seed).reset_index(drop=True)
+    test_data = test_data.sample(frac=1, random_state=seed).reset_index(drop=True)
+    train_labels = extract_labels(train_data, one_hot=one_hot, num_classes=num_classes)
+    test_labels = extract_labels(test_data, one_hot=one_hot, num_classes=num_classes)
+    train_payloads = train_data['bytes'].values
+    test_payloads = test_data['bytes'].values
     # pad with zero up to payload_length length
-    payloads = utils.pad_arrays_with_zero(payloads, payload_length=payload_length)
+    train_payloads = utils.pad_arrays_with_zero(train_payloads, payload_length=payload_length)
+    test_payloads = utils.pad_arrays_with_zero(test_payloads, payload_length=payload_length)
 
-    if not 0 <= validation_size <= len(payloads):
-        raise ValueError(
-            'Validation size should be between 0 and {}. Received: {}.'
-                .format(len(payloads), validation_size))
     # TODO make seperate TEST SET ONCE ready
-    total_length = len(payloads)
-    test_amount = int(total_length * test_size)
-
+    total_length = len(train_payloads)
     validation_amount = int(total_length * validation_size)
-    test_payloads = payloads[:test_amount]
-    test_labels = labels[:test_amount]
-    val_payloads = payloads[test_amount:(validation_amount + test_amount)]
-    val_labels = labels[test_amount:(validation_amount + test_amount)]
-    train_payloads = payloads[(validation_amount + test_amount):]
-    train_labels = labels[(validation_amount + test_amount):]
+    if merge_data:
+        test_amount = int(total_length * test_size)
+        test_payloads = train_payloads[:test_amount]
+        test_labels = train_labels[:test_amount]
+        val_payloads = train_payloads[test_amount:(validation_amount + test_amount)]
+        val_labels = train_labels[test_amount:(validation_amount + test_amount)]
+        train_payloads = train_payloads[(validation_amount + test_amount):]
+        train_labels = train_labels[(validation_amount + test_amount):]
+    else:
+        val_payloads = train_payloads[:validation_amount]
+        val_labels = train_labels[:validation_amount]
+        train_payloads = train_payloads[validation_amount:]
+        train_labels = train_labels[validation_amount:]
+
     options = dict(dtype=dtype, seed=seed)
     print("Training set size: {0}".format(len(train_payloads)))
     print("Validation set size: {0}".format(len(val_payloads)))

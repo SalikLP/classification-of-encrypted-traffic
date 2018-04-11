@@ -11,7 +11,7 @@ def train_input_fn(features, labels, batch_size):
     return dataset.make_one_shot_iterator().get_next()
 
 
-def ffn_layer(name, inputs, hidden_units, activation=tf.nn.relu):
+def ffn_layer(name, inputs, hidden_units, activation=tf.nn.relu, seed=None):
     """Reusable code for making a simple neural net layer.
 
     It does a matrix multiply, bias add, and then uses relu to nonlinearize.
@@ -20,7 +20,7 @@ def ffn_layer(name, inputs, hidden_units, activation=tf.nn.relu):
     """
     input_dim = inputs.get_shape().as_list()[1]
     # use xavier glorot intitializer as regular uniform dist did not work
-    weight_initializer = tf.contrib.layers.xavier_initializer(uniform=True, seed=None, dtype=tf.float32)
+    weight_initializer = tf.contrib.layers.xavier_initializer(uniform=True, seed=seed, dtype=tf.float32)
     with tf.variable_scope(name):
         # This Variable will hold the state of the weights for the layer
         with tf.name_scope('weights'):
