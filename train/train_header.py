@@ -6,10 +6,10 @@ import datetime
 now = datetime.datetime.now()
 subdir = "/%.2d%.2d_%.2d%.2d" % (now.day, now.month, now.hour, now.minute)
 summaries_dir = '../tensorboard'
-num_headers = 16
-hidden_units = 50
-train_dir = '/home/mclrn/Data/windows/no_checksum/{0}/'.format(num_headers)
-test_dir = '/home/mclrn/Data/linux/no_checksum/{0}/'.format(num_headers)
+num_headers = 4
+hidden_units = 15
+train_dir = 'E:/Data/windows/{0}/'.format(num_headers)
+test_dir = 'E:/Data/salik_windows/{0}/'.format(num_headers)
 save_dir = "../trained_models/"
 seed = 0
 
