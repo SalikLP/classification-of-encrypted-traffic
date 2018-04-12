@@ -45,7 +45,7 @@ class ConfusionMatrix:
             row_str += " |" + str(col_sum[idx])
             s.append(row_str)
 
-        row_sum = [(self.max_len+4)*" "+" ".join(map(str, row_sum))]
+        row_sum = [(self.max_len+7)*" "+" ".join(map(str, row_sum))]
         hline = [(1+self.max_len)*" "+"-"*len(row_sum[0])]
 
         s = hline + s + hline + row_sum

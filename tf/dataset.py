@@ -127,7 +127,7 @@ def extract_labels(dataframe, one_hot=False, num_classes=10):
     return labels
 
 
-def read_data_sets(train_dir, test_dir,
+def read_data_sets(train_dirs=[], test_dirs=[],
                    merge_data=True,
                    one_hot=False,
                    dtype=dtypes.float32,
@@ -138,17 +138,18 @@ def read_data_sets(train_dir, test_dir,
                    payload_length=810):
     trainframes = []
     testframes = []
-    for fullname in glob.iglob(train_dir + '*.h5'):
-        filename = os.path.basename(fullname)
-        df = utils.load_h5(train_dir, filename)
-        trainframes.append(df)
-    # create one large dataframe
+    for train_dir in train_dirs:
+        for fullname in glob.iglob(train_dir + '*.h5'):
+            filename = os.path.basename(fullname)
+            df = utils.load_h5(train_dir, filename)
+            trainframes.append(df)
+        # create one large dataframe
     train_data = pd.concat(trainframes)
-
-    for fullname in glob.iglob(test_dir + '*.h5'):
-        filename = os.path.basename(fullname)
-        df = utils.load_h5(test_dir, filename)
-        testframes.append(df)
+    for test_dir in test_dirs:
+        for fullname in glob.iglob(test_dir + '*.h5'):
+            filename = os.path.basename(fullname)
+            df = utils.load_h5(test_dir, filename)
+            testframes.append(df)
     test_data = pd.concat(testframes)
 
     if merge_data:
