@@ -205,6 +205,7 @@ def saveheaderstask(filelist, num_headers, session, dataframes):
     datapointslist = []
     for fullname in filelist:
         load_dir, filename = os.path.split(fullname)
+        print("Loading: {0}".format(filename))
         df = load_h5(load_dir, filename)
         datapoints = extractdatapoints(df, num_headers, session)
         datapointslist.append(datapoints)
