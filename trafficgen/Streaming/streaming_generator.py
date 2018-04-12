@@ -137,7 +137,6 @@ if __name__ == "__main__":
     #hbouser = os.environ["hbouser"]
     #hbopassword = os.environ["hbopassword"]
     # slack_token = os.environ['slack_token']
-    SLACK_TOKEN = "xoxp-293516421953-294177990549-318123252422-7d590cf48153aeab21db3461ae339610" 
     # Specify duration in seconds
     duration = 60 * 1
     total_iterations = 300
