@@ -2,14 +2,17 @@ import tensorflow as tf
 from tf import tf_utils as tfu, confusionmatrix as conf, dataset
 import numpy as np
 import datetime
+from sklearn import metrics
+import utils
 
 now = datetime.datetime.now()
 subdir = "/%.2d%.2d_%.2d%.2d" % (now.day, now.month, now.hour, now.minute)
 summaries_dir = '../tensorboard'
 num_headers = 4
 hidden_units = 15
-train_dir = 'E:/Data/windows/{0}/'.format(num_headers)
-test_dir = 'E:/Data/salik_windows/{0}/'.format(num_headers)
+train_dirs = ['E:/Data/windows/{0}/'.format(num_headers)]
+test_dirs = ['E:/Data/salik_windows/{0}/'.format(num_headers)]
+
 save_dir = "../trained_models/"
 seed = 0
 
@@ -17,13 +20,14 @@ seed = 0
 beta = 1.0
 
 input_size = num_headers*54
-data = dataset.read_data_sets(train_dir, test_dir, merge_data=False, one_hot=True, validation_size=0.1, test_size=0.2,
+data = dataset.read_data_sets(train_dirs, test_dirs, merge_data=False, one_hot=True, validation_size=0.1, test_size=0.2,
                               balance_classes=False,
                               payload_length=input_size, seed=seed)
 tf.reset_default_graph()
 num_classes = len(dataset._label_encoder.classes_)
+labels = dataset._label_encoder.classes_
 
-cm = conf.ConfusionMatrix(num_classes, class_names=dataset._label_encoder.classes_)
+cm = conf.ConfusionMatrix(num_classes, class_names=labels)
 gpu_opts = tf.GPUOptions(per_process_gpu_memory_fraction=0.45)
 
 x_pl = tf.placeholder(tf.float32, [None, input_size], name='xPlaceholder')
@@ -37,7 +41,7 @@ x = tfu.ffn_layer('layer1', x_pl, hidden_units, activation=tf.nn.relu, seed=seed
 # x = tfu.ffn_layer('layer2', x, 50, activation=tf.nn.sigmoid)
 # x = tfu.ffn_layer('layer3', x, 730, activation=tf.nn.relu)
 y = tfu.ffn_layer('output_layer', x, hidden_units=num_classes, activation=tf.nn.softmax, seed=seed)
-
+y_ = tf.argmax(y, axis=1)
 # with tf.name_scope('cross_entropy'):
 #   # The raw formulation of cross-entropy,
 #   #
@@ -148,12 +152,17 @@ with tf.Session() as sess:
         print('Test Loss {:6.3f}, Test acc {:6.3f}'.format(
             np.mean(test_loss), np.mean(test_accuracy)))
         saver.save(sess, save_dir+'header_{0}_{1}_units.ckpt'.format(num_headers, hidden_units))
+        feed_dict_test = {x_pl: data.test.payloads, y_pl: data.test.labels}
+        y_preds = sess.run(fetches=y_, feed_dict=feed_dict_test)
+        y_true = tf.argmax(data.test.labels, axis=1).eval()
+        y_true = [labels[i] for i in y_true]
+        y_preds = [labels[i] for i in y_preds]
+        conf = metrics.confusion_matrix(y_true, y_preds, labels=labels)
 
     except KeyboardInterrupt:
         pass
-
-
-print(cm)
+utils.plot_confusion_matrix(conf, labels, save=True)
+# print(cm)
 
 
 #
