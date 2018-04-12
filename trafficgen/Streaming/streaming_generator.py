@@ -60,7 +60,7 @@ def generate_streaming(duration, dir, total_iterations, options=None):
                     #     browser.close()
 
                 except Exception as e:
-                    notifySlack("Something went wrong %s" % traceback.format_exc())
+                    notifySlack("Windows machine - Something went wrong %s" % traceback.format_exc())
                     # Wait for capture thread
                     capture_thread.join()
                     # Do a cleanup since somthing went wrong
@@ -69,13 +69,14 @@ def generate_streaming(duration, dir, total_iterations, options=None):
                     #     browser.close()
                 try:
                     for browser in browsers:
+                        browser.close()
                         browser.quit()
                 except Exception as e:
-                    notifySlack("Something went wrong %s" % traceback.format_exc())
+                    notifySlack("Windows machine - Something went wrong while closing browsers%s" % traceback.format_exc())
                         # os.system("killall chrome")
                         # os.system("killall chromedriver")
         except Exception as ex:
-            notifySlack("Something went wrong when setting up the threads \n %s" % traceback.format_exc())
+            notifySlack("Windows machine - Something went wrong when setting up the threads \n %s" % traceback.format_exc())
 
        
         
@@ -93,13 +94,14 @@ def generate_threaded_streaming(obj: stream.Streaming, stream_name, dir, duratio
     streaming_threads = []
     browsers = []
     for i in range(num_threads):
-        firefox_profile_dir = "C:\\Users\\admin\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\sopide1q.default"
-        firefox_profile = webdriver.FirefoxProfile(firefox_profile_dir)
-        firefox_profile.set_preference('dom.ipc.plugins.enabled.libflashplayer.so', 'true')
-        firefox_profile.set_preference("plugin.state.flash", 1) 
-        options = webdriver.FirefoxOptions()
+        # firefox_profile_dir = "C:\\Users\\admin\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\sopide1q.default"
+        # firefox_profile = webdriver.FirefoxProfile(firefox_profile_dir)
+        # firefox_profile.set_preference('dom.ipc.plugins.enabled.libflashplayer.so', 'true')
+        # firefox_profile.set_preference("plugin.state.flash", 1) 
+        # options = webdriver.FirefoxOptions()
         # options.set_headless()
-        browser = webdriver.Firefox(firefox_options=options, firefox_profile=firefox_profile)
+        # browser = webdriver.Firefox(firefox_options=options, firefox_profile=firefox_profile)
+        browser = webdriver.Chrome(options=options)
         browser.implicitly_wait(10)
         browsers.append(browser)
         t = Thread(target=obj.stream_video, args=(obj, browser))
@@ -138,13 +140,14 @@ if __name__ == "__main__":
     SLACK_TOKEN = "xoxp-293516421953-294177990549-318123252422-7d590cf48153aeab21db3461ae339610" 
     # Specify duration in seconds
     duration = 60 * 1
-    total_iterations = 1000
+    total_iterations = 300
     save_dir = 'D:\\Data'
-    # chrome_profile_dir = "/home/mclrn/.config/google-chrome/"
-    firefox_profile_dir = "C:\\Users\\admin\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\sopide1q.default"
-    options = webdriver.FirefoxProfile(firefox_profile_dir)
-    #options.add_argument('user-data-dir=' + chrome_profile_dir)
+    chrome_profile_dir = "C:\\Users\\admin\\AppData\\Local\\Google\\Chrome\\User Data\\"
+    # firefox_profile_dir = "C:\\Users\\admin\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\sopide1q.default"
+    # options = webdriver.FirefoxProfile(firefox_profile_dir)
+    options = webdriver.ChromeOptions()
+    options.add_argument('user-data-dir=' + chrome_profile_dir)
     # options.add_argument("--enable-quic")
-    # options.add_argument('headless')
-    generate_streaming(duration, save_dir, total_iterations)
+    options.add_argument('headless')
+    generate_streaming(duration, save_dir, total_iterations, options)
     print("something")
