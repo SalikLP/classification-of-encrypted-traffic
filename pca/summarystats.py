@@ -1,15 +1,26 @@
 import numpy as np
 import pandas as pd
 import utils
-import seaborn as sns
+# import seaborn as sns
+import glob
+import os
 from scipy import stats, integrate
 import matplotlib.pyplot as plt
-sns.set(color_codes=True)
+# sns.set(color_codes=True)
 
 
-def remove_checksum():
-    df = pd.read_hdf('C:\\users\\arhjo\\desktop\\windows_extracted_16.h5', key="extracted_16")
-    nrheaders = 16
+def remove_checksum(nrheaders):
+    # nrheaders = 1
+    read_dir = '/home/mclrn/Data/linux/'
+    headers = '{0}/'.format(nrheaders)
+    dataframes = []
+    for fullname in glob.iglob(read_dir + headers + '*.h5'):
+        filename = os.path.basename(fullname)
+        df = utils.load_h5(read_dir + headers, filename)
+        dataframes.append(df)
+    # create one large dataframe
+    df = pd.concat(dataframes)
+    # df = pd.read_hdf('/home/mclrn/Data/salik_windows/{0}/'.format(nrheaders), key="extracted_{0}".format(nrheaders))
     df = df.sample(frac=1).reset_index(drop=True)
     values, counts = np.unique(df['label'], return_counts=True)
     print(values, counts)
@@ -55,11 +66,17 @@ def remove_checksum():
     new_df = pd.DataFrame(new_data)
     # print(df)
     # print(new_df)
-    new_df.to_hdf("C:\\users\\arhjo\\desktop\\" + 'windows_extracted_16-no_checksum' + '.h5',
-                  key='windows_extracted_16', mode='w')
+    save_dir = read_dir + "no_checksum/" + headers
+    # if not os.path.exists(save_dir):
+    os.makedirs(save_dir, exist_ok=True)
+    new_df.to_hdf(save_dir +
+                  "extracted_{0}-no_checksum".format(nrheaders) + '.h5',
+                  key='extracted_{0}'.format(nrheaders), mode='w')
 
 
-remove_checksum()
+nr = [1,2,4,8,16]
+for n in nr:
+    remove_checksum(n)
 
 
 #sns.distplot(bytes[0:,370], kde=False, rug=True)
