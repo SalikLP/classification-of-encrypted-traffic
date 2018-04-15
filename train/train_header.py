@@ -8,11 +8,11 @@ import utils
 now = datetime.datetime.now()
 subdir = "/%.2d%.2d_%.2d%.2d" % (now.day, now.month, now.hour, now.minute)
 summaries_dir = '../tensorboard'
-num_headers = 8
+num_headers = 4
 hidden_units = 15
-train_dirs = ['/home/mclrn/Data/windows/no_checksum/{0}/'.format(num_headers),
-              '/home/mclrn/Data/linux/no_checksum/{0}/'.format(num_headers)]
-test_dirs = ['/home/mclrn/Data/salik_windows/{0}/'.format(num_headers)]
+train_dirs = ['E:/Data/windows/{0}/'.format(num_headers)]
+test_dirs = ['E:/Data/salik_windows/{0}/'.format(num_headers)]
+
 save_dir = "../trained_models/"
 seed = 0
 

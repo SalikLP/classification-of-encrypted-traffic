@@ -2,6 +2,12 @@ import utils
 import trafficgen.PyTgen.config as cf
 import socket
 
+
+def save_dataframe_h5(df, dir, filename):
+    key = filename.split('-')[0]
+    df.to_hdf(dir + filename + '.h5', key=key)
+
+
 Conf = cf.Conf
 all_ips = []
 for http in Conf.http_urls:
@@ -13,10 +19,23 @@ for http in Conf.http_urls:
     ip_list = list(set(ip_list))
     all_ips.append(ip_list)
 
-flat_list = [ip for ips in all_ips for ip in ips]
+http_list = [ip for ips in all_ips for ip in ips]
 
-dir = '../'
-filename = 'http-https-blandet_1902_1300'
-dataframe = utils.filter_pcap_by_ip(dir,filename, flat_list, 'http')
-utils.save_dataframe_h5(dataframe,dir, 'http-browse-1902_1410')
+all_ips = []
+for http in Conf.https_urls:
+    url = http.split('/')[2]
+    ip_list = []
+    ais = socket.getaddrinfo(url, 0, 0, 0, 0)
+    for result in ais:
+        ip_list.append(result[-1][0])
+    ip_list = list(set(ip_list))
+    all_ips.append(ip_list)
+https_list = [ip for ips in all_ips for ip in ips]
 
+dir = 'E:/Data/'
+filename = 'http_https-browse'
+http_dataframe = utils.filter_pcap_by_ip(dir, filename, http_list, 'http')
+save_dataframe_h5(http_dataframe, dir, 'http-browse-1104_2010')
+
+https_dataframe = utils.filter_pcap_by_ip(dir, filename, https_list, 'https')
+save_dataframe_h5(https_dataframe, dir, 'https-browse-1104_2020')
