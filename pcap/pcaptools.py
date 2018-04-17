@@ -57,12 +57,17 @@ def process_pcap_to_h5(read_dir, save_dir, session_threshold=5000):
 
     splits = 4
     files_splits = split_list(files, splits)
-
+    processes = []
     for file_split in files_splits:
         # create a thread for each
         t1 = multiprocessing.Process(target=save_pcap_task, args=(file_split, save_dir, session_threshold))
+        print("Starting process", t1)
+        processes.append(t1)
         t1.start()
 
+    for process in processes:
+        process.join()
+        print("Process joined", process)
 
 def save_pcap(fullname, save_dir, session_threshold=0):
     """

@@ -8,10 +8,10 @@ import utils
 now = datetime.datetime.now()
 subdir = "/%.2d%.2d_%.2d%.2d" % (now.day, now.month, now.hour, now.minute)
 summaries_dir = '../tensorboard'
-num_headers = 4
+num_headers = 16
 hidden_units = 15
-train_dirs = ['E:/Data/windows/{0}/'.format(num_headers)]
-test_dirs = ['E:/Data/salik_windows/{0}/'.format(num_headers)]
+train_dirs = ['E:/Data/windows/no_checksum/{0}/'.format(num_headers), 'E:/Data/linux/no_checksum/{0}/'.format(num_headers), 'E:/Data/salik_windows_extended/no_checksum/{0}/'.format(num_headers)]
+test_dirs = ['E:/Data/windows_chrome/no_checksum/{0}/'.format(num_headers)]
 
 save_dir = "../trained_models/"
 seed = 0
@@ -157,11 +157,29 @@ with tf.Session() as sess:
         y_true = tf.argmax(data.test.labels, axis=1).eval()
         y_true = [labels[i] for i in y_true]
         y_preds = [labels[i] for i in y_preds]
-        conf = metrics.confusion_matrix(y_true, y_preds, labels=labels)
+        nostream_dict = ['http', 'https']
+        y_stream_true = []
+        y_stream_preds = []
+        for i,v in enumerate(y_true):
+            pred = y_preds[i]
+            if v in nostream_dict:
+                y_stream_true.append('No Streaming')
+            else:
+                y_stream_true.append('Streaming')
+            if pred in nostream_dict:
+                y_stream_preds.append('No Streaming')
+            else:
+                y_stream_preds.append('Streaming')
+        conf1 = metrics.confusion_matrix(y_true, y_preds, labels=labels)
+        conf2 = metrics.confusion_matrix(y_stream_true, y_stream_preds, labels=['No Streaming', 'Streaming'])
 
     except KeyboardInterrupt:
         pass
-utils.plot_confusion_matrix(conf, labels, save=True)
+
+utils.plot_confusion_matrix(conf1, labels, save=True, title="AllClasses")
+utils.plot_confusion_matrix(conf2, ['No Streaming', 'Streaming'], save=True, title="StreamNoStream")
+
+
 # print(cm)
 
 

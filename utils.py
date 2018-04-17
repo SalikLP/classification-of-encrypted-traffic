@@ -241,6 +241,7 @@ def saveextractedheaders(load_dir, save_dir, savename, num_headers=15, session=T
 
     for t in threads:
         t.join()
+        print("Process joined: ", t)
     data = pd.concat(dataframes)
     key = savename.split('-')[0]
     if not os.path.exists(save_dir):
@@ -308,4 +309,6 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
     if save:
         plt.savefig("{0}.png".format(title), dpi=300)
-    plt.draw()
+    else:
+        plt.draw()
+    plt.gcf().clear()

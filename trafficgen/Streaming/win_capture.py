@@ -15,7 +15,7 @@ def captureTraffic(interfaceNumber, duration, dir, file):
         os.mkdir(dir)
 
     open(file, "w") # overwrites if file already exists
-    os.system("tshark -i %d -a duration:%d -w %s port not 5901 and ip and not broadcast and not multicast" % (interfaceNumber, duration, file))
+    os.system("tshark -i %d -a duration:%d -w %s port not 5901 and ((port 80) or (port 443)) and ip and not broadcast and not multicast" % (interfaceNumber, duration, file))
 
 
 def cleanup(file):
