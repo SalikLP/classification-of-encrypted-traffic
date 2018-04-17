@@ -2,7 +2,7 @@ import multiprocessing
 
 from scapy.all import *
 import matplotlib.pyplot as plt
-
+import os
 import numpy as np
 import time
 import pandas as pd
@@ -291,7 +291,7 @@ def plot_confusion_matrix(cm, classes,
     print(cm)
 
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
+    plt.title("Accuracy: {0}".format(title.split("acc")[1]))
     plt.colorbar()
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation='vertical')
@@ -308,7 +308,37 @@ def plot_confusion_matrix(cm, classes,
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     if save:
-        plt.savefig("{0}.png".format(title), dpi=300)
+        i = 0
+        filename = "{}".format(title)
+        while os.path.exists('{}{:d}.png'.format(filename, i)):
+            i += 1
+        plt.savefig('{}{:d}.png'.format(filename, i), dpi=300)
     else:
         plt.draw()
     plt.gcf().clear()
+
+
+def plot_metric_graph(x_list, y_list,x_label="Datapoints", y_label="Accuracy",
+                          title='Metric list', save=False):
+    from matplotlib import rcParams
+    # Make room for xlabel which is otherwise cut off
+    rcParams.update({'figure.autolayout': True})
+
+    plt.plot(x_list, y_list)
+    # Calculate min and max of y scale
+    ymin = np.min(y_list)
+    ymin = np.floor(ymin * 10) / 10
+    ymax = np.max(y_list)
+    ymax = np.ceil(ymax * 10) / 10
+    plt.ylim(ymin, ymax)
+    plt.title("{0}".format(title))
+    plt.tight_layout()
+    plt.ylabel(y_label)
+    plt.xlabel(x_label)
+    if save:
+        i = 0
+        filename = "{}".format(title)
+        while os.path.exists('{}{:d}.png'.format(filename, i)):
+            i += 1
+        plt.savefig('{}{:d}.png'.format(filename, i), dpi=300)
+    plt.draw()
