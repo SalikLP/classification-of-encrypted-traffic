@@ -29,6 +29,8 @@ class EarlyStopping:
         # Allow instances to be re-used
         self.wait = 0
         self.stopped_epoch = 0
+        self.best = np.Inf
+        self.stop_training = False
 
     def on_epoch_end(self, epoch, current):
         if self.monitor_op(current - self.min_delta, self.best):
