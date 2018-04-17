@@ -314,6 +314,7 @@ def plot_confusion_matrix(cm, classes,
 def plot_metric_graph(x_list, y_list,x_label="Datapoints", y_label="Accuracy",
                           title='Metric list', save=False):
     from matplotlib import rcParams
+    import os
     # Make room for xlabel which is otherwise cut off
     rcParams.update({'figure.autolayout': True})
 
@@ -329,5 +330,9 @@ def plot_metric_graph(x_list, y_list,x_label="Datapoints", y_label="Accuracy",
     plt.ylabel(y_label)
     plt.xlabel(x_label)
     if save:
-        plt.savefig("{0}.png".format(title), dpi=300)
+        i = 0
+        filename = "{}".format(title)
+        while os.path.exists('{}{:d}.png'.format(filename, i)):
+            i += 1
+        plt.savefig('{}{:d}.png'.format(filename, i), dpi=300)
     plt.draw()

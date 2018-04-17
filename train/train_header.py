@@ -30,16 +30,19 @@ seed = 0
 namestr = trainstr+teststr+str(num_headers)+":"+str(hidden_units)
 # Beta for L2 regularization
 beta = 1.0
-val_size = [0.25]
+val_size = [0.899, 0.895, 0.89, 0.88, 0.87, 0.86, 0.85, 0.84, 0.83, 0.82, 0.81, 0.8, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25]
 acc_list = []
 train_size = []
 early_stop = es.EarlyStopping(patience=10, min_delta=0.05)
 for val in val_size:
     subdir = "/%.2d%.2d_%.2d%.2d%.2d" % (now.day, now.month, now.hour, now.minute, now.second)
     input_size = num_headers*54
-    data = dataset.read_data_sets(train_dirs, test_dirs, merge_data=True, one_hot=True, validation_size=val, test_size =0.1,
+    data = dataset.read_data_sets(train_dirs, test_dirs, merge_data=False, one_hot=True,
+                                  validation_size=val,
+                                  test_size=0.1,
                                   balance_classes=False,
-                                  payload_length=input_size, seed=seed)
+                                  payload_length=input_size,
+                                  seed=seed)
     tf.reset_default_graph()
     train_size.append(len(data.train.payloads))
     num_classes = len(dataset._label_encoder.classes_)
