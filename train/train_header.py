@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tf import tf_utils as tfu, confusionmatrix as conf, dataset
+from tf import tf_utils as tfu, confusionmatrix as conf, dataset, early_stopping as es
 import numpy as np
 import datetime
 from sklearn import metrics
@@ -30,9 +30,10 @@ seed = 0
 namestr = trainstr+teststr+str(num_headers)+":"+str(hidden_units)
 # Beta for L2 regularization
 beta = 1.0
-val_size = [0.899, 0.895, 0.89, 0.88, 0.87, 0.86, 0.85, 0.84, 0.83, 0.82, 0.81, 0.8, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25]
+val_size = [0.25]
 acc_list = []
 train_size = []
+early_stop = es.EarlyStopping(patience=10, min_delta=0.05)
 for val in val_size:
     subdir = "/%.2d%.2d_%.2d%.2d%.2d" % (now.day, now.month, now.hour, now.minute, now.second)
     input_size = num_headers*54
@@ -109,13 +110,14 @@ for val in val_size:
 
     # Training Loop
     batch_size = 100
-    max_epochs = 30
+    max_epochs = 100
 
     valid_loss, valid_accuracy = [], []
     train_loss, train_accuracy = [], []
     test_loss, test_accuracy = [], []
 
     with tf.Session() as sess:
+        early_stop.on_train_begin()
         train_writer.add_graph(sess.graph)
         sess.run(tf.global_variables_initializer())
         print('Begin training loop')
@@ -149,10 +151,16 @@ for val in val_size:
                     valid_loss.append(_loss)
                     valid_accuracy.append(_acc)
                     val_writer.add_summary(_summary, data.train.epochs_completed)
+                    current = valid_loss[-1]
+                    early_stop.on_epoch_end(data.train.epochs_completed, current)
                     print("Epoch {} : Train Loss {:6.3f}, Train acc {:6.3f},  Valid loss {:6.3f},  Valid acc {:6.3f}"
                             .format(data.train.epochs_completed, train_loss[-1], train_accuracy[-1], valid_loss[-1],
                             valid_accuracy[-1]))
-                    
+                    if early_stop.stop_training:
+                        early_stop.on_train_end()
+                        break
+
+
             test_epoch = data.test.epochs_completed
             while data.test.epochs_completed == test_epoch:
                 batch_size = 1000
