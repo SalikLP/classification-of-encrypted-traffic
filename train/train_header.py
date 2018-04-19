@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tf import tf_utils as tfu, confusionmatrix as conf, dataset
+from tf import tf_utils as tfu, confusionmatrix as conf, dataset, early_stopping as es
 import numpy as np
 import datetime
 from sklearn import metrics
@@ -8,14 +8,14 @@ import utils
 now = datetime.datetime.now()
 
 summaries_dir = '../tensorboard'
-num_headers = 8
+num_headers = 16
 hidden_units = 15
-train_dirs = ['/home/mclrn/Data/salik_windows_extended/no_checksum/{0}/'.format(num_headers),
-              '/home/mclrn/Data/windows_firefox/no_checksum/{0}/'.format(num_headers),
-              '/home/mclrn/Data/windows_chrome/no_checksum/{0}/'.format(num_headers),
-              '/home/mclrn/Data/linux/no_checksum/{0}/'.format(num_headers)]
+train_dirs = ['E:/Data/windows_firefox/no_checksum/{0}/'.format(num_headers),
+              'E:/Data/windows_chrome/no_checksum/{0}/'.format(num_headers),
+              'E:/Data/linux/no_checksum/{0}/'.format(num_headers),
+              'E:/Data/salik_windows_extended/no_checksum/{0}/'.format(num_headers)]
 
-test_dirs = ['/home/mclrn/Data/andreas_windows/no_checksum/{0}/'.format(num_headers)]
+test_dirs = ['E:/Data/andreas_windows/no_checksum/{0}/'.format(num_headers)]
 
 trainstr = "train:"
 for traindir in train_dirs:
@@ -25,6 +25,7 @@ teststr = "test:"
 for testdir in test_dirs:
     teststr += testdir.split('Data/')[1].split("/")[0]
     teststr += ":"
+
 save_dir = "../trained_models/"
 seed = 0
 namestr = trainstr+teststr+str(num_headers)+":"+str(hidden_units)
@@ -33,12 +34,17 @@ beta = 1.0
 val_size = [0.899, 0.895, 0.89, 0.88, 0.87, 0.86, 0.85, 0.84, 0.83, 0.82, 0.81, 0.8, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25]
 acc_list = []
 train_size = []
+early_stop = es.EarlyStopping(patience=10, min_delta=0.05)
+
 for val in val_size:
     subdir = "/%.2d%.2d_%.2d%.2d%.2d" % (now.day, now.month, now.hour, now.minute, now.second)
     input_size = num_headers*54
-    data = dataset.read_data_sets(train_dirs, test_dirs, merge_data=True, one_hot=True, validation_size=val, test_size =0.1,
+    data = dataset.read_data_sets(train_dirs, test_dirs, merge_data=False, one_hot=True,
+                                  validation_size=val,
+                                  test_size=0.1,
                                   balance_classes=False,
-                                  payload_length=input_size, seed=seed)
+                                  payload_length=input_size,
+                                  seed=seed)
     tf.reset_default_graph()
     train_size.append(len(data.train.payloads))
     num_classes = len(dataset._label_encoder.classes_)
@@ -109,13 +115,14 @@ for val in val_size:
 
     # Training Loop
     batch_size = 100
-    max_epochs = 30
+    max_epochs = 100
 
     valid_loss, valid_accuracy = [], []
     train_loss, train_accuracy = [], []
     test_loss, test_accuracy = [], []
 
     with tf.Session() as sess:
+        early_stop.on_train_begin()
         train_writer.add_graph(sess.graph)
         sess.run(tf.global_variables_initializer())
         print('Begin training loop')
@@ -149,10 +156,16 @@ for val in val_size:
                     valid_loss.append(_loss)
                     valid_accuracy.append(_acc)
                     val_writer.add_summary(_summary, data.train.epochs_completed)
+                    current = valid_loss[-1]
+                    early_stop.on_epoch_end(data.train.epochs_completed, current)
                     print("Epoch {} : Train Loss {:6.3f}, Train acc {:6.3f},  Valid loss {:6.3f},  Valid acc {:6.3f}"
                             .format(data.train.epochs_completed, train_loss[-1], train_accuracy[-1], valid_loss[-1],
                             valid_accuracy[-1]))
-                    
+                    if early_stop.stop_training:
+                        early_stop.on_train_end()
+                        break
+
+
             test_epoch = data.test.epochs_completed
             while data.test.epochs_completed == test_epoch:
                 batch_size = 1000
@@ -176,15 +189,29 @@ for val in val_size:
             y_true = tf.argmax(data.test.labels, axis=1).eval()
             y_true = [labels[i] for i in y_true]
             y_preds = [labels[i] for i in y_preds]
-            conf = metrics.confusion_matrix(y_true, y_preds, labels=labels)
-
+            nostream_dict = ['http', 'https']
+            y_stream_true = []
+            y_stream_preds = []
+            for i, v in enumerate(y_true):
+                pred = y_preds[i]
+                if v in nostream_dict:
+                    y_stream_true.append('No Streaming')
+                else:
+                    y_stream_true.append('Streaming')
+                if pred in nostream_dict:
+                    y_stream_preds.append('No Streaming')
+                else:
+                    y_stream_preds.append('Streaming')
+            conf1 = metrics.confusion_matrix(y_true, y_preds, labels=labels)
+            conf2 = metrics.confusion_matrix(y_stream_true, y_stream_preds, labels=['No Streaming', 'Streaming'])
+            utils.plot_confusion_matrix(conf2, ['No Streaming', 'Streaming'], save=True, title="StreamNoStream")
+            utils.plot_confusion_matrix(conf1, labels, save=True, title="AllClasses")
         except KeyboardInterrupt:
             pass
     #utils.plot_confusion_matrix(conf, labels, save=True, title=namestr)
 acc_list = list(map(float, acc_list))
 print(acc_list, train_size)
 utils.plot_metric_graph(train_size, acc_list, title="Datapoints vs. Accuracy", save=True)
-
 
 #
 # # df = utils.load_h5(dir + filename+'.h5', key=filename.split('-')[0])

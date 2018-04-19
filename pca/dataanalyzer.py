@@ -33,6 +33,7 @@ def getmeanstd(dataframe, label):
 
 
 def byteindextoheaderfield(number, TCP=True):
+    # TODO: Check if TCP or UDP based on index 23 and use this function in data_exploration
     if TCP:
         bytenumber = number % 54
     else:

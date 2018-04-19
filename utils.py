@@ -2,7 +2,7 @@ import multiprocessing
 
 from scapy.all import *
 import matplotlib.pyplot as plt
-
+import os
 import numpy as np
 import time
 import pandas as pd
@@ -265,6 +265,7 @@ def saveextractedheaders(load_dir, save_dir, savename, num_headers=15, session=T
 
     for t in threads:
         t.join()
+        print("Process joined: ", t)
     data = pd.concat(dataframes)
     key = savename.split('-')[0]
     if not os.path.exists(save_dir):
@@ -331,13 +332,19 @@ def plot_confusion_matrix(cm, classes,
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     if save:
-        plt.savefig("{0}.png".format(title), dpi=300)
-    plt.draw()
+        i = 0
+        filename = "{}".format(title)
+        while os.path.exists('{}{:d}.png'.format(filename, i)):
+            i += 1
+        plt.savefig('{}{:d}.png'.format(filename, i), dpi=300)
+    else:
+        plt.draw()
     plt.gcf().clear()
 
 
-def plot_metric_graph(x_list, y_list, x_label="Datapoints", y_label="Accuracy",
-                      title='Metric list', save=False):
+
+def plot_metric_graph(x_list, y_list,x_label="Datapoints", y_label="Accuracy",
+                          title='Metric list', save=False):
     from matplotlib import rcParams
     # Make room for xlabel which is otherwise cut off
     rcParams.update({'figure.autolayout': True})
@@ -354,5 +361,10 @@ def plot_metric_graph(x_list, y_list, x_label="Datapoints", y_label="Accuracy",
     plt.ylabel(y_label)
     plt.xlabel(x_label)
     if save:
-        plt.savefig("{0}.png".format(title), dpi=300)
+
+        i = 0
+        filename = "{}".format(title)
+        while os.path.exists('{}{:d}.png'.format(filename, i)):
+            i += 1
+        plt.savefig('{}{:d}.png'.format(filename, i), dpi=300)
     plt.draw()
