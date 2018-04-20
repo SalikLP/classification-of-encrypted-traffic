@@ -200,8 +200,9 @@ def extractdatapoints(dataframe, filename, num_headers=15, session=True):
         headers = []
         label = v['label'].iloc[0]
         protocol = v['protocol'].iloc[0]
+
         # Skip session if UDP and not youtube
-        if protocol == 'TCP' or label == 'youtube':
+        if protocol == 'UDP' and label != 'youtube':
             continue
         # For each packet
         packetindex = 0
