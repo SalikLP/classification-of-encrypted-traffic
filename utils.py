@@ -149,15 +149,25 @@ def packetanonymizer(packet):
     p = np.fromstring(packet, dtype=np.uint8)
     # set MACs to 0
     p[0:12] = 0
+    # Remove IP checksum
+    p[24:26] = 0
     # set IPs to 0
     p[26:34] = 0
     # set ports to 0
     p[34:36] = 0
     p[36:38] = 0
+
+    # IP protocol field check if TCP
+    if p[23] == 6:
+        #Remove TCP checksum
+        p[50:52] = 0
+    else:
+        # Remove UDP checksum
+        p[40:42] = 0
     return p
 
 
-def extractdatapoints(dataframe, num_headers=15, session=True):
+def extractdatapoints(dataframe, filename, num_headers=15, session=True):
     """"
     Extracts the concatenated header datapoints from a dataframe while anonomizing the individual header
     :returns a dataframe with datapoints (bytes) and labels
@@ -166,6 +176,8 @@ def extractdatapoints(dataframe, num_headers=15, session=True):
     gb_dict = dict(list(group_by))
     data_points = []
     labels = []
+    filenames = []
+    sessions = []
     done = set()
     num_too_short = 0
     # Iterate over sessions
@@ -224,7 +236,9 @@ def extractdatapoints(dataframe, num_headers=15, session=True):
             feature_vector = np.concatenate(headers).ravel()
             data_points.append(feature_vector)
             labels.append(label)
-    d = {'bytes': data_points, 'label': labels}
+            filenames.append(filename)
+            sessions.append(k)
+    d = {'filename': filenames, 'session': sessions, 'bytes': data_points, 'label': labels}
     return pd.DataFrame(data=d)
 
 
@@ -234,7 +248,7 @@ def saveheaderstask(filelist, num_headers, session, dataframes):
         load_dir, filename = os.path.split(fullname)
         print("Loading: {0}".format(filename))
         df = load_h5(load_dir, filename)
-        datapoints = extractdatapoints(df, num_headers, session)
+        datapoints = extractdatapoints(df, filename, num_headers, session)
         datapointslist.append(datapoints)
 
     # Extend the shared dataframe
