@@ -45,14 +45,15 @@ def componentprojection(data, pca):
     Z = data @ V
     return Z
 
-def plotprojection(Z, pc, labels):
-    diff_labels = labels.unique()
+def plotprojection(Z, pc, labels, class_labels):
+    diff_labels = np.unique(labels)
     opacity = 0.8
     fig, ax = plt.subplots()
-
+    color_map = {0: 'orangered', 1: 'royalblue', 2: 'lightgreen', 3: 'darkorchid', 4: 'teal', 5: 'darkslategrey',
+                 6: 'darkgreen', 7: 'darkgrey'}
     for label in diff_labels:
         idx = labels == label
-        ax.plot(Z[idx, pc], Z[idx, pc + 1], 'o', alpha=opacity, label='{label}'.format(label=label))
+        ax.plot(Z[idx, pc], Z[idx, pc + 1], 'o', alpha=opacity, c=color_map[label], label='{label}'.format(label=class_labels[label]))
     # ax.plot(Z[idx_below, pc], Z[idx_below, pc + 1], 'o', alpha=opacity,
     #         label='{name} below mean'.format(name=attributeNames[att]))
     ax.set_ylabel('$v{0}$'.format(pc + 2))
