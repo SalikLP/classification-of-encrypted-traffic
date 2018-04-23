@@ -30,7 +30,8 @@ seed = 0
 namestr = trainstr+teststr+str(num_headers)+":"+str(hidden_units)
 # Beta for L2 regularization
 beta = 1.0
-val_size = [0.899, 0.895, 0.89, 0.88, 0.87, 0.86, 0.85, 0.84, 0.83, 0.82, 0.81, 0.8, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25]
+# val_size = [0.899, 0.895, 0.89, 0.88, 0.87, 0.86, 0.85, 0.84, 0.83, 0.82, 0.81, 0.8, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25]
+val_size = [0.999, 0.995, 0.99, 0.98, 0.97, 0.96, 0.95, 0.94, 0.93, 0.92, 0.91, 0.9, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25]
 acc_list = []
 train_size = []
 early_stop = es.EarlyStopping(patience=10, min_delta=0.05)
@@ -112,8 +113,8 @@ for val in val_size:
     test_writer = tf.summary.FileWriter(summaries_dir + '/test/' + subdir)
 
     # Training Loop
-    batch_size = 100
-    max_epochs = 100
+    batch_size = 50
+    max_epochs = 200
 
     valid_loss, valid_accuracy = [], []
     train_loss, train_accuracy = [], []

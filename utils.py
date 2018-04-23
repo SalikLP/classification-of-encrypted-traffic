@@ -307,20 +307,26 @@ def plot_confusion_matrix(cm, classes,
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     if save:
-        plt.savefig("{0}.png".format(title), dpi=300)
+        i = 0
+        filename = "{}".format(title)
+        while os.path.exists('{}{:d}.png'.format(filename, i)):
+            i += 1
+        plt.savefig('{}{:d}.png'.format(filename, i), dpi=300)
     plt.draw()
     plt.gcf().clear()
 
-def plot_metric_graph(x_list, y_list,x_label="Datapoints", y_label="Accuracy",
+
+def plot_metric_graph(x_list, y_list,x_list2=None, y_list2=None, x_label="Datapoints", y_label="Accuracy",
                           title='Metric list', save=False):
     from matplotlib import rcParams
     import os
     # Make room for xlabel which is otherwise cut off
     rcParams.update({'figure.autolayout': True})
 
-    plt.plot(x_list, y_list)
+    plt.plot(x_list, y_list, label="90/10 split")
+    plt.plot(x_list2, y_list2, label="Seperate testset")
     # Calculate min and max of y scale
-    ymin = np.min(y_list)
+    ymin = np.min(y_list2)
     ymin = np.floor(ymin * 10) / 10
     ymax = np.max(y_list)
     ymax = np.ceil(ymax * 10) / 10
@@ -329,6 +335,7 @@ def plot_metric_graph(x_list, y_list,x_label="Datapoints", y_label="Accuracy",
     plt.tight_layout()
     plt.ylabel(y_label)
     plt.xlabel(x_label)
+    plt.legend()
     if save:
         i = 0
         filename = "{}".format(title)
@@ -336,3 +343,9 @@ def plot_metric_graph(x_list, y_list,x_label="Datapoints", y_label="Accuracy",
             i += 1
         plt.savefig('{}{:d}.png'.format(filename, i), dpi=300)
     plt.draw()
+    plt.gcf().clear()
+
+
+# y_list_test, x_list_test = [0.265, 0.572, 0.636, 0.704, 0.746, 0.763, 0.769, 0.784, 0.789, 0.818, 0.82, 0.817, 0.831, 0.845, 0.846, 0.848, 0.859, 0.887, 0.876], [54, 268, 536, 1072, 1608, 2144, 2680, 3216, 3752, 4288, 4824, 5360, 8039, 13398, 18758, 24117, 29476, 34835, 40194]
+# y_list_merge, x_list_merge = [0.269, 0.75, 0.79, 0.818, 0.833, 0.844, 0.856, 0.866, 0.87, 0.868, 0.883, 0.881, 0.902, 0.925, 0.923, 0.941, 0.946, 0.943], [59, 291, 582, 1163, 1744, 2325, 2906, 3487, 4068, 4649, 5230, 5811, 8717, 14528, 20339, 26150, 31961, 37772]
+# plot_metric_graph(x_list_merge, y_list_merge, x_list_test, y_list_test, title="#Training Datapoints vs. Accuracy", save=True)
