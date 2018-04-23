@@ -2,12 +2,11 @@ import multiprocessing
 
 from scapy.all import *
 import matplotlib.pyplot as plt
-
+import os
 import numpy as np
 import time
 import pandas as pd
 import glob
-
 
 
 def filter_pcap_by_ip(dir, filename, ip_list, label):
@@ -30,7 +29,7 @@ def filter_pcap_by_ip(dir, filename, ip_list, label):
     totalPackets = len(data)
     percentage = int(totalPackets / 100)
     # Workaround/speedup for pandas append to dataframe
-    frametimes =[]
+    frametimes = []
     dsts = []
     srcs = []
     protocols = []
@@ -41,8 +40,8 @@ def filter_pcap_by_ip(dir, filename, ip_list, label):
 
     print("Total packages: %d" % totalPackets)
     time_r = time.clock()
-    time_read = time_r-time_s
-    print("Time to read PCAP: "+ str(time_read))
+    time_read = time_r - time_s
+    print("Time to read PCAP: " + str(time_read))
     for packet in data:
         if IP in packet and \
                 (UDP in packet or TCP in packet) and \
@@ -59,11 +58,11 @@ def filter_pcap_by_ip(dir, filename, ip_list, label):
             raw_payload = raw(packet)
             bytes.append(raw_payload)
             labels.append(label)
-            if(count%(percentage*5) == 0):
-                print(str(count/percentage) + '%')
+            if (count % (percentage * 5) == 0):
+                print(str(count / percentage) + '%')
             count += 1
     time_t = time.clock()
-    print("Time spend: %ds" % (time_t-time_r))
+    print("Time spend: %ds" % (time_t - time_r))
     d = {'time': frametimes,
          'ip.dst': dsts,
          'ip.src': srcs,
@@ -83,9 +82,10 @@ def load_h5(dir, filename):
     timeS = time.clock()
     df = pd.read_hdf(dir + "/" + filename, key=filename.split('-')[0])
     timeE = time.clock()
-    loadTime = timeE-timeS
+    loadTime = timeE - timeS
     print("Time to load " + filename + ": " + str(loadTime))
     return df
+
 
 def plotHex(hexvalues, filename):
     '''
@@ -95,19 +95,18 @@ def plotHex(hexvalues, filename):
     '''
 
     size = 39
-    hex_placeholder = [0]*(size*size) #create placeholder of correct size
+    hex_placeholder = [0] * (size * size)  # create placeholder of correct size
 
-
-    if(type(hexvalues[0]) is np.ndarray):
-      print("Multiple payloads")
-      for hex_list in hexvalues:
-        hex_placeholder[0:len(hex_list)] += hex_list  # overwrite zero values with values of
-      hex_placeholder = np.array(hex_placeholder)/len(hexvalues) # average the elements of the placeholder
+    if (type(hexvalues[0]) is np.ndarray):
+        print("Multiple payloads")
+        for hex_list in hexvalues:
+            hex_placeholder[0:len(hex_list)] += hex_list  # overwrite zero values with values of
+        hex_placeholder = np.array(hex_placeholder) / len(hexvalues)  # average the elements of the placeholder
     else:
-      print("Single payload")
-      hex_placeholder[0:len(hexvalues)] = hexvalues #overwrite zero values with values of
+        print("Single payload")
+        hex_placeholder[0:len(hexvalues)] = hexvalues  # overwrite zero values with values of
 
-    canvas = np.reshape(np.array(hex_placeholder),(size,size))
+    canvas = np.reshape(np.array(hex_placeholder), (size, size))
     plt.figure(figsize=(4, 4))
     plt.axis('off')
     plt.imshow(canvas, cmap='gray')
@@ -118,7 +117,7 @@ def plotHex(hexvalues, filename):
 
 def pad_string_elements_with_zero(payloads):
     # Assume max payload to be 1460 bytes but as each byte is now 2 hex digits we take double length
-    max_payload_len = 1460*2
+    max_payload_len = 1460 * 2
     # Pad with '0'
     payloads = [s.ljust(max_payload_len, '0') for s in payloads]
     return payloads
@@ -135,6 +134,7 @@ def pad_arrays_with_zero(payloads, payload_length=810):
     # payloads = [np.fromstring(x) for x in payloads]
     return np.array(tmp_payloads)
 
+
 def hash_elements(payloads):
     return payloads
 
@@ -149,15 +149,25 @@ def packetanonymizer(packet):
     p = np.fromstring(packet, dtype=np.uint8)
     # set MACs to 0
     p[0:12] = 0
+    # Remove IP checksum
+    p[24:26] = 0
     # set IPs to 0
     p[26:34] = 0
     # set ports to 0
     p[34:36] = 0
     p[36:38] = 0
+
+    # IP protocol field check if TCP
+    if p[23] == 6:
+        #Remove TCP checksum
+        p[50:52] = 0
+    else:
+        # Remove UDP checksum
+        p[40:42] = 0
     return p
 
 
-def extractdatapoints(dataframe, num_headers=15, session=True):
+def extractdatapoints(dataframe, filename, num_headers=15, session=True):
     """"
     Extracts the concatenated header datapoints from a dataframe while anonomizing the individual header
     :returns a dataframe with datapoints (bytes) and labels
@@ -166,8 +176,11 @@ def extractdatapoints(dataframe, num_headers=15, session=True):
     gb_dict = dict(list(group_by))
     data_points = []
     labels = []
+    filenames = []
+    sessions = []
     done = set()
     num_too_short = 0
+    # Iterate over sessions
     for k, v in gb_dict.items():
         # v is a DataFrame
         # k is a tuple (src, dst, sport, dport)
@@ -182,26 +195,53 @@ def extractdatapoints(dataframe, num_headers=15, session=True):
         if len(v) < num_headers:
             num_too_short += 1
             continue
+        # extract num_headers of packets (one row each)
         packets = v['bytes'].values[:num_headers]
         headers = []
-        for i in range(num_headers):
-            p = packets[i]
+        label = v['label'].iloc[0]
+        protocol = v['protocol'].iloc[0]
+
+        # Skip session if UDP and not youtube
+        if protocol == 'UDP' and label != 'youtube':
+            continue
+        # For each packet
+        packetindex = 0
+        headeradded = 0
+
+        while headeradded < num_headers:
+            if packetindex < len(packets):
+                p = packets[packetindex]
+                packetindex += 1
+            else:
+                break
             p_an = packetanonymizer(p)
-            protocol = v['protocol'].iloc[0] # assuming a session utilize the same protocol throughout
+
+            # assuming a session utilize the same protocol throughout
             # Extract headers (TCP = 54 Bytes, UDP = 42 Bytes - Maybe + 4 Bytes for VLAN tagging) from x first packets of session/flow
+            header = np.zeros(54, dtype=np.uint8)
             if protocol == 'TCP':
                 # TCP
-                header = p_an[:54]
+                header[:54] = p_an[:54]
             else:
                 # UDP
-                header = p_an[:42]
+                header[:42] = p_an[:42]  # pad zeros
+
+            # Skip if header packet is fragmented
+            if (0 < header[20] < 64) or header[21] != 0:
+                continue
             headers.append(header)
+            headeradded += 1
+
         # Concatenate headers as the feature vector
-        feature_vector = np.concatenate(headers).ravel()
-        data_points.append(feature_vector)
-        labels.append(v['label'].iloc[0])
-    d = {'bytes': data_points, 'label': labels}
+        if len(headers) == num_headers:
+            feature_vector = np.concatenate(headers).ravel()
+            data_points.append(feature_vector)
+            labels.append(label)
+            filenames.append(filename)
+            sessions.append(k)
+    d = {'filename': filenames, 'session': sessions, 'bytes': data_points, 'label': labels}
     return pd.DataFrame(data=d)
+
 
 def saveheaderstask(filelist, num_headers, session, dataframes):
     datapointslist = []
@@ -209,12 +249,11 @@ def saveheaderstask(filelist, num_headers, session, dataframes):
         load_dir, filename = os.path.split(fullname)
         print("Loading: {0}".format(filename))
         df = load_h5(load_dir, filename)
-        datapoints = extractdatapoints(df, num_headers, session)
+        datapoints = extractdatapoints(df, filename, num_headers, session)
         datapointslist.append(datapoints)
 
     # Extend the shared dataframe
     dataframes.extend(datapointslist)
-
 
 
 def saveextractedheaders(load_dir, save_dir, savename, num_headers=15, session=True):
@@ -241,6 +280,7 @@ def saveextractedheaders(load_dir, save_dir, savename, num_headers=15, session=T
 
     for t in threads:
         t.join()
+        print("Process joined: ", t)
     data = pd.concat(dataframes)
     key = savename.split('-')[0]
     if not os.path.exists(save_dir):
@@ -312,14 +352,14 @@ def plot_confusion_matrix(cm, classes,
         while os.path.exists('{}{:d}.png'.format(filename, i)):
             i += 1
         plt.savefig('{}{:d}.png'.format(filename, i), dpi=300)
-    plt.draw()
+    else:
+        plt.draw()
     plt.gcf().clear()
 
 
 def plot_metric_graph(x_list, y_list,x_list2=None, y_list2=None, x_label="Datapoints", y_label="Accuracy",
                           title='Metric list', save=False):
     from matplotlib import rcParams
-    import os
     # Make room for xlabel which is otherwise cut off
     rcParams.update({'figure.autolayout': True})
 
