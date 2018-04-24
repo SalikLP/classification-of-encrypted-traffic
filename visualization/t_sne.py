@@ -12,7 +12,8 @@ from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 seed = 0
 num_headers = 8
-dirs = ["C:/Users/salik/Documents/Data/WindowsAndreas/{}/".format(num_headers)]
+dirs = ["E:/Data/h5/https/", "E:/Data/h5/netflix/"]
+# dirs = ["C:/Users/salik/Documents/Data/WindowsAndreas/{}/".format(num_headers)]
 # step 1: get the data
 dataframes = []
 for dir in dirs:
@@ -29,7 +30,7 @@ print(columns)
 
 # step 3: get features (x) and scale the features
 # get x and convert it to numpy array
-x = da.getbytes(data, num_headers*54)
+x = da.getbytes(data, 1460)
 # x = da.getbytes(x, num_headers*54)
 standard_scaler = StandardScaler()
 x_std = standard_scaler.fit_transform(x)
@@ -42,7 +43,7 @@ label_encoder = LabelEncoder()
 y = label_encoder.fit_transform(y)
 
 # step 5: split the data into training set and test set
-test_percentage = 0.99
+test_percentage = 0.1
 x_train, x_test, y_train, y_test = train_test_split(x_std, y, test_size=test_percentage, random_state=seed)
 #
 # p = pca.runpca(x_test, num_comp=2)
@@ -50,7 +51,7 @@ x_train, x_test, y_train, y_test = train_test_split(x_std, y, test_size=test_per
 # pca.plotprojection(z, 0, y_test, class_labels)
 # t-distributed Stochastic Neighbor Embedding (t-SNE) visualization
 from sklearn.manifold import TSNE
-perplexities = [50.0]
+perplexities = [10.0, 20.0, 30.0, 50.0]
 for perplexity in perplexities:
     tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=5000, random_state=seed)
     x_test_2d = tsne.fit_transform(x_test)

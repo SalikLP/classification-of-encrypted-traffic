@@ -5,3 +5,5 @@ __pycache__/
 .idea/
 .vscode/
 constants.py
+trained_models/
+tensorboard/
