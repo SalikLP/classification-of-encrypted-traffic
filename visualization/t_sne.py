@@ -43,7 +43,7 @@ label_encoder = LabelEncoder()
 y = label_encoder.fit_transform(y)
 
 # step 5: split the data into training set and test set
-test_percentage = 0.1
+test_percentage = 0.5
 x_train, x_test, y_train, y_test = train_test_split(x_std, y, test_size=test_percentage, random_state=seed)
 #
 # p = pca.runpca(x_test, num_comp=2)
@@ -51,9 +51,9 @@ x_train, x_test, y_train, y_test = train_test_split(x_std, y, test_size=test_per
 # pca.plotprojection(z, 0, y_test, class_labels)
 # t-distributed Stochastic Neighbor Embedding (t-SNE) visualization
 from sklearn.manifold import TSNE
-perplexities = [10.0, 20.0, 30.0, 50.0]
+perplexities = [10.0]
 for perplexity in perplexities:
-    tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=5000, random_state=seed)
+    tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=5000, random_state=seed, verbose=2)
     x_test_2d = tsne.fit_transform(x_test)
 
     # scatter plot the sample points among 5 classes
@@ -61,7 +61,7 @@ for perplexity in perplexities:
     color_map = {0: 'orangered', 1: 'royalblue', 2: 'lightgreen', 3: 'darkorchid', 4: 'teal', 5: 'darkslategrey', 6:'darkgreen', 7:'darkgrey'}
     plt.figure()
     for idx, cl in enumerate(np.unique(y_test)):
-        plt.scatter(x=x_test_2d[y_test == cl, 0], y=x_test_2d[y_test == cl, 1], c=color_map[idx], label=class_labels[cl])
+        plt.scatter(x=x_test_2d[y_test == cl, 0], y=x_test_2d[y_test == cl, 1], marker=".", c=color_map[idx], label=class_labels[cl])
     plt.xlabel('X in t-SNE')
     plt.ylabel('Y in t-SNE')
     plt.legend(loc='upper left')
