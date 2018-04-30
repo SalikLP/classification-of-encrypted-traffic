@@ -18,7 +18,7 @@ num_headers = 8
 #         "C:/Users/salik/Documents/Data/WindowsChrome/{}/".format(num_headers),
 #         "C:/Users/salik/Documents/Data/WindowsSalik/{}/".format(num_headers),
 #         "C:/Users/salik/Documents/Data/WindowsAndreas/{}/".format(num_headers)]
-dirs = ["C:/Users/salik/Documents/Data/h5/https/", "C:/Users/salik/Documents/Data/h5/netflix/"]
+dirs = ["E:/Data/h5/https/", "E:/Data/h5/netflix/"]
 # dirs = ["C:/Users/salik/Documents/Data/WindowsAndreas/{}/".format(num_headers)]
 # step 1: get the data
 dataframes = []
@@ -58,7 +58,7 @@ y = label_encoder.fit_transform(y)
 # class_labels1 = ["Linux " + x for x in class_labels]
 # class_labels2 = ["Windows " + x for x in class_labels]
 # step 5: split the data into training set and test set
-test_percentage = 0.1
+test_percentage = 0.5
 x_tests = []
 y_tests = []
 # for i, x_std in enumerate(x_stds):
@@ -72,7 +72,7 @@ x_train, x_test, y_train, y_test = train_test_split(x_std, y, test_size=test_per
 # first_set_length = len(y_tests[0])
 # print(first_set_length)
 #
-p = pca.runpca(x_test, num_comp=1000)
+p = pca.runpca(x_test, num_comp=50)
 z = pca.componentprojection(x_test, p)
 # pca.plotprojection(z, 0, y_test, class_labels)
 # pca.plotvarianceexp(p, 25)
@@ -100,7 +100,8 @@ for perplexity in perplexities:
     # color_map = {0: 'orangered', 1: 'royalblue', 2: 'lightgreen', 3: 'darkorchid', 4: 'teal', 5: 'darkslategrey', 6:'orange'}
     plt.figure()
     for idx, cl in enumerate(np.unique(y_test)):
-        # plt.scatter(x=x_test_2d_0[y_tests[0] == cl, 0], y=x_test_2d_0[y_tests[0] == cl, 1],
+        plt.scatter(x=x_test_2d[y_test == cl, 0], y=x_test_2d[y_test == cl, 1], marker=".", c=color_map[idx], label=class_labels[cl])
+     # plt.scatter(x=x_test_2d_0[y_tests[0] == cl, 0], y=x_test_2d_0[y_tests[0] == cl, 1],
         #             marker="+", s=30,
         #             c=color_map[idx],
         #             label=class_labels1[cl])
@@ -110,10 +111,10 @@ for perplexity in perplexities:
         #             # marker=ms.MarkerStyle(marker="o", fillstyle='none'),
         #             edgecolors=color_map[idx],
         #             label=class_labels2[cl])
-        plt.scatter(x=x_test_2d[y_test == cl, 0], y=x_test_2d[y_test == cl, 1],
-                                marker=".", facecolors="None", s=30, linewidths=1,
-                                edgecolors=color_map[idx],
-                                label=class_labels[cl])
+        # plt.scatter(x=x_test_2d[y_test == cl, 0], y=x_test_2d[y_test == cl, 1],
+        #                         marker=".", facecolors="None", s=30, linewidths=1,
+        #                         edgecolors=color_map[idx],
+        #                         label=class_labels[cl])
 
     plt.xlabel('X in t-SNE')
     plt.ylabel('Y in t-SNE')
