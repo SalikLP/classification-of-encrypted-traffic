@@ -13,12 +13,12 @@ import matplotlib.pyplot as plt
 import matplotlib.markers as ms
 seed = 0
 num_headers = 8
-dirs = ["C:/Users/salik/Documents/Data/LinuxChrome/{}/".format(num_headers),
-        "C:/Users/salik/Documents/Data/WindowsFirefox/{}/".format(num_headers),
-        "C:/Users/salik/Documents/Data/WindowsChrome/{}/".format(num_headers),
-        "C:/Users/salik/Documents/Data/WindowsSalik/{}/".format(num_headers),
-        "C:/Users/salik/Documents/Data/WindowsAndreas/{}/".format(num_headers)]
-# dirs = ["C:/Users/salik/Documents/Data/h5/https/", "C:/Users/salik/Documents/Data/h5/netflix/"]
+# dirs = ["C:/Users/salik/Documents/Data/LinuxChrome/{}/".format(num_headers),
+#         "C:/Users/salik/Documents/Data/WindowsFirefox/{}/".format(num_headers),
+#         "C:/Users/salik/Documents/Data/WindowsChrome/{}/".format(num_headers),
+#         "C:/Users/salik/Documents/Data/WindowsSalik/{}/".format(num_headers),
+#         "C:/Users/salik/Documents/Data/WindowsAndreas/{}/".format(num_headers)]
+dirs = ["C:/Users/salik/Documents/Data/h5/https/", "C:/Users/salik/Documents/Data/h5/netflix/"]
 # dirs = ["C:/Users/salik/Documents/Data/WindowsAndreas/{}/".format(num_headers)]
 # step 1: get the data
 dataframes = []
@@ -43,7 +43,8 @@ standard_scaler = StandardScaler()
 # x_stds = []
 # ys = []
 # for data in dataframes:
-x = da.getbytes(data, num_headers*54)
+# x = da.getbytes(data, num_headers*54)
+x = da.getbytes(data, 1460)
 x_std = standard_scaler.fit_transform(x)
 # x_stds.append(x_std)
 # step 4: get class labels y and then encode it into number
@@ -71,8 +72,8 @@ x_train, x_test, y_train, y_test = train_test_split(x_std, y, test_size=test_per
 # first_set_length = len(y_tests[0])
 # print(first_set_length)
 #
-# p = pca.runpca(x_test, num_comp=25)
-# z = pca.componentprojection(x_test, p)
+p = pca.runpca(x_test, num_comp=1000)
+z = pca.componentprojection(x_test, p)
 # pca.plotprojection(z, 0, y_test, class_labels)
 # pca.plotvarianceexp(p, 25)
 # plot_savename = "PCA_header_all_cumulative"
@@ -80,7 +81,7 @@ x_train, x_test, y_train, y_test = train_test_split(x_std, y, test_size=test_per
 # t-distributed Stochastic Neighbor Embedding (t-SNE) visualization
 plot_savename = "t-sne_8headers_all_merged_perplexity"
 from sklearn.manifold import TSNE
-perplexities = [30.0]
+perplexities = [10.0]
 
 from matplotlib import rcParams
 # Make room for xlabel which is otherwise cut off
@@ -89,7 +90,7 @@ rcParams.update({'figure.autolayout': True})
 for perplexity in perplexities:
     print("Starting perplexity: {}".format(perplexity))
     tsne = TSNE(n_components=2, perplexity=perplexity, n_iter=1000, random_state=seed, verbose=2)
-    x_test_2d = tsne.fit_transform(x_test)
+    x_test_2d = tsne.fit_transform(z)
     # x_test_2d_0 = x_test_2d[:first_set_length, :]
     # x_test_2d_1 = x_test_2d[first_set_length:, :]
 
