@@ -124,6 +124,18 @@ for val in val_size:
         early_stop.on_train_begin()
         train_writer.add_graph(sess.graph)
         sess.run(tf.global_variables_initializer())
+        total_parameters = 0
+        print("Calculating trainable parameters!")
+        for variable in tf.trainable_variables():
+            # shape is an array of tf.Dimension
+            shape = variable.get_shape()
+            print("Shape: {}".format(shape))
+            variable_parameters = 1
+            for dim in shape:
+                variable_parameters *= dim.value
+            print("Shape {0} gives {1} trainable parameters".format(shape, variable_parameters))
+            total_parameters += variable_parameters
+        print("Trainable parameters: {}".format(total_parameters))
         print('Begin training loop')
         saver = tf.train.Saver()
         try:

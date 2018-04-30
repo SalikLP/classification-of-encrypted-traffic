@@ -5,19 +5,19 @@ from sklearn import metrics
 import utils
 summaries_dir = '../tensorboard'
 
-
-train_dirs=['/home/mclrn/Data/Payload/https/']
-test_dirs=['/home/mclrn/Data/Payload/netflix/']
+train_dirs = ["E:/Data/h5/https/"]
+test_dirs = ["E:/Data/h5/netflix/"]
 pay_len = 1460
-hidden_units = 1000
+hidden_units = 2000
 save_dir = "../trained_models/"
+seed = 1
 
-data = dataset.read_data_sets(train_dirs, test_dirs, merge_data=True, one_hot=True, validation_size=0.1, test_size=0.1, balance_classes=True, payload_length=pay_len)
+data = dataset.read_data_sets(train_dirs, test_dirs, merge_data=True, one_hot=True, validation_size=0.1, test_size=0.1, balance_classes=True, payload_length=pay_len, seed=seed)
 tf.reset_default_graph()
 num_classes = len(dataset._label_encoder.classes_)
 labels = dataset._label_encoder.classes_
 
-early_stop = es.EarlyStopping(patience=10, min_delta=0.05)
+early_stop = es.EarlyStopping(patience=100, min_delta=0.05)
 
 cm = conf.ConfusionMatrix(num_classes, class_names=dataset._label_encoder.classes_)
 gpu_opts = tf.GPUOptions(per_process_gpu_memory_fraction=0.45)
@@ -26,10 +26,10 @@ x_pl = tf.placeholder(tf.float32, [None, pay_len], name='xPlaceholder')
 y_pl = tf.placeholder(tf.float64, [None, num_classes], name='yPlaceholder')
 y_pl = tf.cast(y_pl, tf.float32)
 
-x = tfu.ffn_layer('layer1', x_pl, hidden_units, activation=tf.nn.relu)
-x = tfu.ffn_layer('layer2', x, hidden_units, activation=tf.nn.relu)
-x = tfu.ffn_layer('layer3', x, hidden_units, activation=tf.nn.relu)
-y = tfu.ffn_layer('output_layer', x, hidden_units=num_classes, activation=tf.nn.softmax)
+x = tfu.ffn_layer('layer1', x_pl, hidden_units, activation=tf.nn.relu, seed=seed)
+x = tfu.ffn_layer('layer2', x, hidden_units, activation=tf.nn.relu, seed=seed)
+x = tfu.ffn_layer('layer3', x, hidden_units, activation=tf.nn.relu, seed=seed)
+y = tfu.ffn_layer('output_layer', x, hidden_units=num_classes, activation=tf.nn.softmax, seed=seed)
 y_ = tf.argmax(y, axis=1)
 # with tf.name_scope('cross_entropy'):
 #   # The raw formulation of cross-entropy,
@@ -78,7 +78,7 @@ test_writer = tf.summary.FileWriter(summaries_dir + '/test')
 
 # Training Loop
 batch_size = 100
-max_epochs = 100
+max_epochs = 200
 
 valid_loss, valid_accuracy = [], []
 train_loss, train_accuracy = [], []
@@ -88,6 +88,18 @@ with tf.Session() as sess:
     early_stop.on_train_begin()
     train_writer.add_graph(sess.graph)
     sess.run(tf.global_variables_initializer())
+    total_parameters = 0
+    print("Calculating trainable parameters!")
+    for variable in tf.trainable_variables():
+        # shape is an array of tf.Dimension
+        shape = variable.get_shape()
+        # print("Shape: {}".format(shape))
+        variable_parameters = 1
+        for dim in shape:
+            variable_parameters *= dim.value
+        print("Shape {0} gives {1} trainable parameters".format(shape, variable_parameters))
+        total_parameters += variable_parameters
+    print("Trainable parameters: {}".format(total_parameters))
     print('Begin training loop')
     saver = tf.train.Saver()
     try:
