@@ -22,21 +22,23 @@ def plotvarianceexp(pca, num_comp):
     width = 0.35
     opacity = 0.8
     fig, ax = plt.subplots()
-    ax.set_ylim(0, 1.2)
+    ax.set_ylim(0, 1.1)
     # Variance explained by single component
     bars1 = ax.bar(ind, rho[0:num_comp], width, alpha=opacity, color="xkcd:blue", label='Single')
     # Variance explained by cummulative component
     bars2 = ax.bar(ind + width, rhosum[0:num_comp], width, alpha=opacity, color="g", label='Cummulative')
     # add some text for labels, title and axes ticks
-    ax.set_ylabel('Variance Explained')
-    ax.set_title('Variance Explained by principal components')
+    ax.set_ylabel('Variance Explained', fontsize=16)
+    # ax.set_title('Variance Explained by principal components')
     ax.set_xticks(ind + width / 2)
+
     labels = ["" for x in range(num_comp)]
     for k in range(0, num_comp):
         labels[k] = ('$v{0}$'.format(k + 1))
-    ax.set_xticklabels(labels)
-    ax.legend()
+    ax.set_xticklabels(labels, fontsize=16)
+    ax.legend(fontsize=16)
     autolabel(bars2, ax)
+    plt.yticks(fontsize=16)
     plt.draw()
 
 
@@ -76,4 +78,4 @@ def autolabel(rects, ax):
         height = rect.get_height()
         ax.text(rect.get_x() + rect.get_width()/2., 1.05*height,
                 '%4.2f' % height,
-                ha='center', va='bottom')
+                ha='center', va='bottom', fontsize=16)
