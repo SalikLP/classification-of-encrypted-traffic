@@ -168,11 +168,23 @@ def read_data_sets(train_dirs=[], test_dirs=[],
         train_data = new_data
         train_data = pd.concat(train_data)
 
+
     # shuffle the dataframe and reset the index
     train_data = train_data.sample(frac=1, random_state=seed).reset_index(drop=True)
+    #
+    # youtube_selector = train_data['label'] == 'youtube'
+    # youtube_data = train_data[youtube_selector]
+    # for index, row in youtube_data.iterrows():
+    #     bytes = row[0]
+    #     if bytes[23] == 17.0:
+    #         train_data.loc[index, 'label'] = 'youtube_udp'
+    #     else:
+    #         train_data.loc[index, 'label'] = 'youtube_tcp'
+
+
     test_data = test_data.sample(frac=1, random_state=seed).reset_index(drop=True)
-    train_labels = extract_labels(train_data, one_hot=one_hot, num_classes=num_classes)
     test_labels = extract_labels(test_data, one_hot=one_hot, num_classes=num_classes)
+    train_labels = extract_labels(train_data, one_hot=one_hot, num_classes=num_classes)
     train_payloads = train_data['bytes'].values
     test_payloads = test_data['bytes'].values
     # pad with zero up to payload_length length

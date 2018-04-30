@@ -10,12 +10,12 @@ now = datetime.datetime.now()
 summaries_dir = '../tensorboard'
 num_headers = 8
 hidden_units = 15
-train_dirs = ['/home/mclrn/Data/salik_windows_extended/no_checksum/{0}/'.format(num_headers),
-              '/home/mclrn/Data/windows_firefox/no_checksum/{0}/'.format(num_headers),
-              '/home/mclrn/Data/windows_chrome/no_checksum/{0}/'.format(num_headers),
-              '/home/mclrn/Data/linux/no_checksum/{0}/'.format(num_headers)]
+train_dirs = ['/home/mclrn/Data/WindowsChrome/{0}/'.format(num_headers),
+              '/home/mclrn/Data/WindowsFirefox/{0}/'.format(num_headers),
+              '/home/mclrn/Data/WindowsAndreas/{0}/'.format(num_headers),
+              '/home/mclrn/Data/LinuxChrome/{0}/'.format(num_headers)]
 
-test_dirs = ['/home/mclrn/Data/andreas_windows/no_checksum/{0}/'.format(num_headers)]
+test_dirs = ['/home/mclrn/Data/WindowsSalik/{0}/'.format(num_headers)]
 
 trainstr = "train:"
 for traindir in train_dirs:
@@ -31,16 +31,16 @@ namestr = trainstr+teststr+str(num_headers)+":"+str(hidden_units)
 # Beta for L2 regularization
 beta = 1.0
 # val_size = [0.899, 0.895, 0.89, 0.88, 0.87, 0.86, 0.85, 0.84, 0.83, 0.82, 0.81, 0.8, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25]
-val_size = [0.999, 0.995, 0.99, 0.98, 0.97, 0.96, 0.95, 0.94, 0.93, 0.92, 0.91, 0.9, 0.85, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25]
+val_size = [0.2]
 acc_list = []
 train_size = []
-early_stop = es.EarlyStopping(patience=10, min_delta=0.05)
+early_stop = es.EarlyStopping(patience=20, min_delta=0.05)
 for val in val_size:
     subdir = "/%.2d%.2d_%.2d%.2d%.2d" % (now.day, now.month, now.hour, now.minute, now.second)
     input_size = num_headers*54
-    data = dataset.read_data_sets(train_dirs, test_dirs, merge_data=False, one_hot=True,
+    data = dataset.read_data_sets(train_dirs, test_dirs, merge_data=True, one_hot=True,
                                   validation_size=val,
-                                  test_size=0.1,
+                                  test_size=0.2,
                                   balance_classes=False,
                                   payload_length=input_size,
                                   seed=seed)
@@ -113,7 +113,7 @@ for val in val_size:
     test_writer = tf.summary.FileWriter(summaries_dir + '/test/' + subdir)
 
     # Training Loop
-    batch_size = 50
+    batch_size = 10
     max_epochs = 200
 
     valid_loss, valid_accuracy = [], []
@@ -192,10 +192,11 @@ for val in val_size:
 
         except KeyboardInterrupt:
             pass
-    #utils.plot_confusion_matrix(conf, labels, save=True, title=namestr)
+    print(namestr)
+    utils.plot_confusion_matrix(conf, labels, save=True, title=namestr)
 acc_list = list(map(float, acc_list))
 print(acc_list, train_size)
-utils.plot_metric_graph(train_size, acc_list, title="Datapoints vs. Accuracy", save=True)
+# utils.plot_metric_graph(train_size, acc_list, title="Datapoints vs. Accuracy", save=True)
 
 
 #

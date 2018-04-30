@@ -1,25 +1,36 @@
 import tensorflow as tf
-from tf import tf_utils as tfu, confusionmatrix as conf, dataset
+from tf import tf_utils as tfu, confusionmatrix as conf, dataset, early_stopping as es
 import numpy as np
+from sklearn import metrics
+import utils
 summaries_dir = '../tensorboard'
-dir = '../../Data/'
 
-data = dataset.read_data_sets(dir, one_hot=True, validation_size=10000, test_size=20000, balance_classes=True)
+
+train_dirs=['/home/mclrn/Data/Payload/https/']
+test_dirs=['/home/mclrn/Data/Payload/netflix/']
+pay_len = 1460
+hidden_units = 1000
+save_dir = "../trained_models/"
+
+data = dataset.read_data_sets(train_dirs, test_dirs, merge_data=True, one_hot=True, validation_size=0.1, test_size=0.1, balance_classes=True, payload_length=pay_len)
 tf.reset_default_graph()
 num_classes = len(dataset._label_encoder.classes_)
+labels = dataset._label_encoder.classes_
+
+early_stop = es.EarlyStopping(patience=10, min_delta=0.05)
 
 cm = conf.ConfusionMatrix(num_classes, class_names=dataset._label_encoder.classes_)
 gpu_opts = tf.GPUOptions(per_process_gpu_memory_fraction=0.45)
 
-x_pl = tf.placeholder(tf.float32, [None, 1460], name='xPlaceholder')
+x_pl = tf.placeholder(tf.float32, [None, pay_len], name='xPlaceholder')
 y_pl = tf.placeholder(tf.float64, [None, num_classes], name='yPlaceholder')
 y_pl = tf.cast(y_pl, tf.float32)
 
-x = tfu.ffn_layer('layer1', x_pl, 730, activation=tf.nn.relu)
-x = tfu.ffn_layer('layer2', x, 730, activation=tf.nn.relu)
-x = tfu.ffn_layer('layer3', x, 730, activation=tf.nn.relu)
+x = tfu.ffn_layer('layer1', x_pl, hidden_units, activation=tf.nn.relu)
+x = tfu.ffn_layer('layer2', x, hidden_units, activation=tf.nn.relu)
+x = tfu.ffn_layer('layer3', x, hidden_units, activation=tf.nn.relu)
 y = tfu.ffn_layer('output_layer', x, hidden_units=num_classes, activation=tf.nn.softmax)
-
+y_ = tf.argmax(y, axis=1)
 # with tf.name_scope('cross_entropy'):
 #   # The raw formulation of cross-entropy,
 #   #
@@ -67,16 +78,18 @@ test_writer = tf.summary.FileWriter(summaries_dir + '/test')
 
 # Training Loop
 batch_size = 100
-max_epochs = 10
+max_epochs = 100
 
 valid_loss, valid_accuracy = [], []
 train_loss, train_accuracy = [], []
 test_loss, test_accuracy = [], []
 
 with tf.Session() as sess:
+    early_stop.on_train_begin()
+    train_writer.add_graph(sess.graph)
     sess.run(tf.global_variables_initializer())
     print('Begin training loop')
-
+    saver = tf.train.Saver()
     try:
         while data.train.epochs_completed < max_epochs:
             _train_loss, _train_accuracy = [], []
@@ -106,31 +119,104 @@ with tf.Session() as sess:
                 valid_loss.append(_loss)
                 valid_accuracy.append(_acc)
                 val_writer.add_summary(_summary, data.train.epochs_completed)
-                print(
-                    "Epoch {} : Train Loss {:6.3f}, Train acc {:6.3f},  Valid loss {:6.3f},  Valid acc {:6.3f}".format(
-                        data.train.epochs_completed, train_loss[-1], train_accuracy[-1], valid_loss[-1],
+                current = valid_loss[-1]
+                early_stop.on_epoch_end(data.train.epochs_completed, current)
+                print("Epoch {} : Train Loss {:6.3f}, Train acc {:6.3f},  Valid loss {:6.3f},  Valid acc {:6.3f}"
+                        .format(data.train.epochs_completed, train_loss[-1], train_accuracy[-1], valid_loss[-1],
                         valid_accuracy[-1]))
+                if early_stop.stop_training:
+                    early_stop.on_train_end()
+                    break
+
+
         test_epoch = data.test.epochs_completed
         while data.test.epochs_completed == test_epoch:
+            batch_size = 1000
             x_batch, y_batch = data.test.next_batch(batch_size)
             feed_dict_test = {x_pl: x_batch, y_pl: y_batch}
             _loss, _acc, _summary = sess.run(fetches_valid, feed_dict_test)
             y_preds = sess.run(fetches=y, feed_dict=feed_dict_test)
             y_preds = tf.argmax(y_preds, axis=1).eval()
             y_true = tf.argmax(y_batch, axis=1).eval()
-            cm.batch_add(y_true, y_preds)
+            # cm.batch_add(y_true, y_preds)
             test_loss.append(_loss)
             test_accuracy.append(_acc)
             # test_writer.add_summary(_summary, data.train.epochs_completed)
         print('Test Loss {:6.3f}, Test acc {:6.3f}'.format(
             np.mean(test_loss), np.mean(test_accuracy)))
-
+        saver.save(sess, save_dir+'payload_{0}_{1}_units.ckpt'.format(pay_len, hidden_units))
+        feed_dict_test = {x_pl: data.test.payloads, y_pl: data.test.labels}
+        y_preds = sess.run(fetches=y_, feed_dict=feed_dict_test)
+        y_true = tf.argmax(data.test.labels, axis=1).eval()
+        y_true = [labels[i] for i in y_true]
+        y_preds = [labels[i] for i in y_preds]
+        conf = metrics.confusion_matrix(y_true, y_preds, labels=labels)
 
     except KeyboardInterrupt:
         pass
+# print(namestr)
+utils.plot_confusion_matrix(conf, labels, save=True, title='payload_{0}_{1}_units_acc{2}'.format(pay_len, hidden_units, np.mean(test_accuracy)))
+# acc_list = list(map(float, acc_list))
+# print(acc_list, train_size)
+#
+# with tf.Session() as sess:
+#     sess.run(tf.global_variables_initializer())
+#     print('Begin training loop')
+#
+#     try:
+#         while data.train.epochs_completed < max_epochs:
+#             _train_loss, _train_accuracy = [], []
+#
+#             ## Run train op
+#             x_batch, y_batch = data.train.next_batch(batch_size)
+#             fetches_train = [train_op, cross_entropy, accuracy, merged]
+#             feed_dict_train = {x_pl: x_batch, y_pl: y_batch}
+#             _, _loss, _acc, _summary = sess.run(fetches_train, feed_dict_train)
+#
+#             _train_loss.append(_loss)
+#             _train_accuracy.append(_acc)
+#             ## Compute validation loss and accuracy
+#             if data.train.epochs_completed % 1 == 0 \
+#                     and data.train._index_in_epoch <= batch_size:
+#
+#                 train_writer.add_summary(_summary, data.train.epochs_completed)
+#
+#                 train_loss.append(np.mean(_train_loss))
+#                 train_accuracy.append(np.mean(_train_accuracy))
+#
+#                 fetches_valid = [cross_entropy, accuracy, merged]
+#
+#                 feed_dict_valid = {x_pl: data.validation.payloads, y_pl: data.validation.labels}
+#                 _loss, _acc, _summary = sess.run(fetches_valid, feed_dict_valid)
+#
+#                 valid_loss.append(_loss)
+#                 valid_accuracy.append(_acc)
+#                 val_writer.add_summary(_summary, data.train.epochs_completed)
+#                 print(
+#                     "Epoch {} : Train Loss {:6.3f}, Train acc {:6.3f},  Valid loss {:6.3f},  Valid acc {:6.3f}".format(
+#                         data.train.epochs_completed, train_loss[-1], train_accuracy[-1], valid_loss[-1],
+#                         valid_accuracy[-1]))
+#         test_epoch = data.test.epochs_completed
+#         while data.test.epochs_completed == test_epoch:
+#             x_batch, y_batch = data.test.next_batch(batch_size)
+#             feed_dict_test = {x_pl: x_batch, y_pl: y_batch}
+#             _loss, _acc, _summary = sess.run(fetches_valid, feed_dict_test)
+#             y_preds = sess.run(fetches=y, feed_dict=feed_dict_test)
+#             y_preds = tf.argmax(y_preds, axis=1).eval()
+#             y_true = tf.argmax(y_batch, axis=1).eval()
+#             cm.batch_add(y_true, y_preds)
+#             test_loss.append(_loss)
+#             test_accuracy.append(_acc)
+#             # test_writer.add_summary(_summary, data.train.epochs_completed)
+#         print('Test Loss {:6.3f}, Test acc {:6.3f}'.format(
+#             np.mean(test_loss), np.mean(test_accuracy)))
+#
+#
+#     except KeyboardInterrupt:
+#         pass
 
 
-print(cm)
+# print(cm)
 #
 # # df = utils.load_h5(dir + filename+'.h5', key=filename.split('-')[0])
 # # print("Load done!")
