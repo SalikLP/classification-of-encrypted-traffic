@@ -127,7 +127,7 @@ def extract_labels(dataframe, one_hot=False, num_classes=10):
     return labels
 
 
-def read_data_sets(train_dirs=[], test_dirs=[],
+def read_data_sets(train_dirs=[], test_dirs=None,
                    merge_data=True,
                    one_hot=False,
                    dtype=dtypes.float32,
@@ -145,12 +145,15 @@ def read_data_sets(train_dirs=[], test_dirs=[],
             trainframes.append(df)
         # create one large dataframe
     train_data = pd.concat(trainframes)
-    for test_dir in test_dirs:
-        for fullname in glob.iglob(test_dir + '*.h5'):
-            filename = os.path.basename(fullname)
-            df = utils.load_h5(test_dir, filename)
-            testframes.append(df)
-    test_data = pd.concat(testframes)
+    if test_dirs != train_dirs:
+        for test_dir in test_dirs:
+            for fullname in glob.iglob(test_dir + '*.h5'):
+                filename = os.path.basename(fullname)
+                df = utils.load_h5(test_dir, filename)
+                testframes.append(df)
+        test_data = pd.concat(testframes)
+    else:
+        test_data = pd.DataFrame()
 
     if merge_data:
         train_data = pd.concat([test_data, train_data])
@@ -181,15 +184,15 @@ def read_data_sets(train_dirs=[], test_dirs=[],
     #     else:
     #         train_data.loc[index, 'label'] = 'youtube_tcp'
 
-
-    test_data = test_data.sample(frac=1, random_state=seed).reset_index(drop=True)
-    test_labels = extract_labels(test_data, one_hot=one_hot, num_classes=num_classes)
+    if test_dirs != train_dirs:
+        test_data = test_data.sample(frac=1, random_state=seed).reset_index(drop=True)
+        test_labels = extract_labels(test_data, one_hot=one_hot, num_classes=num_classes)
+        test_payloads = test_data['bytes'].values
+        test_payloads = utils.pad_arrays_with_zero(test_payloads, payload_length=payload_length)
     train_labels = extract_labels(train_data, one_hot=one_hot, num_classes=num_classes)
     train_payloads = train_data['bytes'].values
-    test_payloads = test_data['bytes'].values
     # pad with zero up to payload_length length
     train_payloads = utils.pad_arrays_with_zero(train_payloads, payload_length=payload_length)
-    test_payloads = utils.pad_arrays_with_zero(test_payloads, payload_length=payload_length)
 
     # TODO make seperate TEST SET ONCE ready
     total_length = len(train_payloads)

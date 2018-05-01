@@ -10,14 +10,15 @@ from sklearn.metrics import accuracy_score
 
 # visulaize the important characteristics of the dataset
 import matplotlib.pyplot as plt
-data_len = 1460
 seed = 0
-# dirs = ["C:/Users/salik/Documents/Data/LinuxChrome/{}/".format(num_headers),
-#         "C:/Users/salik/Documents/Data/WindowsFirefox/{}/".format(num_headers),
-#         "C:/Users/salik/Documents/Data/WindowsChrome/{}/".format(num_headers),
-#         "C:/Users/salik/Documents/Data/WindowsSalik/{}/".format(num_headers),
-#         "C:/Users/salik/Documents/Data/WindowsAndreas/{}/".format(num_headers)]
-dirs = ["E:/Data/h5/https/", "E:/Data/h5/netflix/"]
+num_headers = 16
+data_len = 54*num_headers #1460
+dirs = ["C:/Users/salik/Documents/Data/LinuxChrome/{}/".format(num_headers),
+        "C:/Users/salik/Documents/Data/WindowsFirefox/{}/".format(num_headers),
+        "C:/Users/salik/Documents/Data/WindowsChrome/{}/".format(num_headers),
+        "C:/Users/salik/Documents/Data/WindowsSalik/{}/".format(num_headers),
+        "C:/Users/salik/Documents/Data/WindowsAndreas/{}/".format(num_headers)]
+# dirs = ["E:/Data/h5/https/", "E:/Data/h5/netflix/"]
 
 # step 1: get the data
 dataframes = []
@@ -66,9 +67,13 @@ plt.figure()
 for idx, cl in enumerate(np.unique(y_test)):
     # Get count of unique values
     values, counts = np.unique(x_test[y_test == cl], return_counts=True)
-    n, bins, patches = plt.hist(values, weights=counts, bins=256, facecolor=color_map[idx+1], label=class_labels[cl],  alpha=0.8)
-    plt.legend(loc='upper right')
-    plt.title('Histogram of : {}'.format(class_labels))
-    plt.tight_layout()
+    # Maybe remove zero as there is a lot of zeros in the header
+    # values = values[1:]
+    # counts = counts[1:]
+    n, bins, patches = plt.hist(values, weights=counts, bins=256, facecolor=color_map[idx], label=class_labels[cl],  alpha=0.8)
+
+plt.legend(loc='upper right')
+plt.title('Histogram of : {}'.format(class_labels))
+plt.tight_layout()
 # plt.savefig('{0}{1}.png'.format(plot_savename, int(perplexity)), dpi=300)
 plt.show()

@@ -14,7 +14,7 @@ import ftplib       # Used for ftp
 import shutil       # Used for network copy
 import telnetlib    # Used for telnet traffic
 import urllib3      # Used for http/https
-import paramiko     # Used for ssh + sftp
+# import paramiko     # Used for ssh + sftp
 urllib3.disable_warnings()
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 

@@ -4,48 +4,54 @@ import numpy as np
 import datetime
 from sklearn import metrics
 import utils
+import os
 
 now = datetime.datetime.now()
 
 summaries_dir = '../tensorboard'
-num_headers = 8
-hidden_units = 15
-train_dirs = ['/home/mclrn/Data/WindowsChrome/{0}/'.format(num_headers),
-              '/home/mclrn/Data/WindowsFirefox/{0}/'.format(num_headers),
-              '/home/mclrn/Data/WindowsAndreas/{0}/'.format(num_headers),
-              '/home/mclrn/Data/LinuxChrome/{0}/'.format(num_headers)]
-
-test_dirs = ['/home/mclrn/Data/WindowsSalik/{0}/'.format(num_headers)]
-
-trainstr = "train:"
-for traindir in train_dirs:
-    trainstr += traindir.split('Data/')[1].split("/")[0]
-    trainstr += ":"
-teststr = "test:"
-for testdir in test_dirs:
-    teststr += testdir.split('Data/')[1].split("/")[0]
-    teststr += ":"
-save_dir = "../trained_models/"
-seed = 0
-namestr = trainstr+teststr+str(num_headers)+":"+str(hidden_units)
-# Beta for L2 regularization
-beta = 1.0
-# val_size = [0.899, 0.895, 0.89, 0.88, 0.87, 0.86, 0.85, 0.84, 0.83, 0.82, 0.81, 0.8, 0.75, 0.65, 0.55, 0.45, 0.35, 0.25]
-val_size = [0.2]
+hidden_units = 12
 acc_list = []
-train_size = []
-early_stop = es.EarlyStopping(patience=20, min_delta=0.05)
-for val in val_size:
-    subdir = "/%.2d%.2d_%.2d%.2d%.2d" % (now.day, now.month, now.hour, now.minute, now.second)
-    input_size = num_headers*54
+num_headers_train = []
+num_headers = [16]
+for num_header in num_headers:
+
+    train_dirs = ['/home/mclrn/Data/LinuxChrome/{0}/'.format(num_header),
+                  '/home/mclrn/Data/WindowsFirefox/{0}/'.format(num_header),
+                  '/home/mclrn/Data/WindowsAndreas/{0}/'.format(num_header),
+                  '/home/mclrn/Data/WindowsSalik/{0}/'.format(num_header),
+                  ]
+
+    # test_dirs = ['/home/mclrn/Data/LinuxChrome/{0}/'.format(num_header)]
+    test_dirs = ['/home/mclrn/Data/WindowsChrome/{0}/'.format(num_header)]
+
+    trainstr = "train:"
+    for traindir in train_dirs:
+        trainstr += traindir.split('Data/')[1].split("/")[0]
+        trainstr += ":"
+    teststr = "test:"
+    for testdir in test_dirs:
+        teststr += testdir.split('Data/')[1].split("/")[0]
+        teststr += ":"
+    timestamp = "%.2d%.2d_%.2d%.2d" % (now.day, now.month, now.hour, now.minute)
+    save_dir = "../trained_models/{0}/{1}/{2}/".format(num_header, hidden_units, timestamp)
+    os.makedirs(save_dir, exist_ok=True)
+    seed = 0
+    namestr = trainstr+teststr+str(num_header)+":"+str(hidden_units)
+    # Beta for L2 regularization
+    beta = 1.0
+    val_size = [0.1]
+
+    early_stop = es.EarlyStopping(patience=20, min_delta=0.05)
+    subdir = "/{0}/{1}/{2}/".format(num_header, hidden_units, timestamp)
+    input_size = num_header*54
     data = dataset.read_data_sets(train_dirs, test_dirs, merge_data=True, one_hot=True,
-                                  validation_size=val,
-                                  test_size=0.2,
+                                  validation_size=0.1,
+                                  test_size=0.1,
                                   balance_classes=False,
                                   payload_length=input_size,
                                   seed=seed)
     tf.reset_default_graph()
-    train_size.append(len(data.train.payloads))
+    num_headers_train.append(num_header)
     num_classes = len(dataset._label_encoder.classes_)
     labels = dataset._label_encoder.classes_
 
@@ -110,7 +116,6 @@ for val in val_size:
     merged = tf.summary.merge_all()
     train_writer = tf.summary.FileWriter(summaries_dir + '/train/' + subdir)
     val_writer = tf.summary.FileWriter(summaries_dir + '/validation/' + subdir)
-    test_writer = tf.summary.FileWriter(summaries_dir + '/test/' + subdir)
 
     # Training Loop
     batch_size = 10
@@ -194,20 +199,22 @@ for val in val_size:
                 np.mean(test_loss), np.mean(test_accuracy)))
             namestr += ":acc{:.3f}".format(np.mean(test_accuracy))
             acc_list.append("{:.3f}".format(np.mean(test_accuracy)))
-            saver.save(sess, save_dir+'header_{0}_{1}_units.ckpt'.format(num_headers, hidden_units))
+            saver.save(sess, save_dir+'header_{0}_{1}_units.ckpt'.format(num_header, hidden_units))
             feed_dict_test = {x_pl: data.test.payloads, y_pl: data.test.labels}
             y_preds = sess.run(fetches=y_, feed_dict=feed_dict_test)
             y_true = tf.argmax(data.test.labels, axis=1).eval()
             y_true = [labels[i] for i in y_true]
             y_preds = [labels[i] for i in y_preds]
             conf = metrics.confusion_matrix(y_true, y_preds, labels=labels)
+            report = metrics.classification_report(y_true, y_preds, labels=labels)
 
         except KeyboardInterrupt:
             pass
     print(namestr)
     utils.plot_confusion_matrix(conf, labels, save=True, title=namestr)
+    print(report)
 acc_list = list(map(float, acc_list))
-print(acc_list, train_size)
+print(acc_list, num_headers_train)
 # utils.plot_metric_graph(train_size, acc_list, title="Datapoints vs. Accuracy", save=True)
 
 
