@@ -7,3 +7,4 @@ __pycache__/
 constants.py
 trained_models/
 tensorboard/
+*.png
