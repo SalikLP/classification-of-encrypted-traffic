@@ -1,3 +1,4 @@
+import copy
 import numpy
 from visualization import vis_utils
 
@@ -66,6 +67,38 @@ class Linear:
         R = self.X * C
         return R
 
+
+class AlphaBetaLinear:
+
+    def __init__(self, W, b, alpha):
+        self.W = W
+        self.B = b
+        self.alpha = alpha
+        self.beta = alpha -1
+
+    def forward(self, X):
+        self.X = X
+        return numpy.dot(self.X, self.W)+self.B
+
+    def gradprop(self, DY):
+        self.DY = DY
+        return numpy.dot(self.DY, self.W.T)
+
+    def relprop(self, R):
+        pself = copy.deepcopy(self)
+        nself = copy.deepcopy(self)
+        pself.B *= 0
+        pself.W = numpy.maximum( 1e-9, pself.W)
+        nself.B *= 0
+        nself.W = numpy.minimum(-1e-9, pself.W)
+
+        X = self.X + 1e-9
+        ZA = pself.forward(X)
+        SA = self.alpha*R/ZA
+        ZB = nself.forward(X)
+        SB = -self.beta *R/ZB
+        R = X * (pself.gradprop(SA) + nself.gradprop(SB))
+        return R
 
 class FirstLinear(Linear):
 
