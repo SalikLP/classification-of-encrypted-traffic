@@ -1,5 +1,5 @@
 import numpy as np
-import PIL.Image
+# import PIL.Image
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 # lowest = -1.0
@@ -41,20 +41,20 @@ def graymap(x):
 # Visualizing data
 # --------------------------------------
 
-def visualize(x,colormap,name):
-
-    N = len(x)
-    assert(N <= 16)
-
-    x = colormap(x/np.abs(x).max())
-
-    # Create a mosaic and upsample
-    x = x.reshape([1, N, 29, 29, 3])
-    x = np.pad(x, ((0, 0), (0, 0), (2, 2), (2, 2), (0, 0)), 'constant', constant_values=1)
-    x = x.transpose([0, 2, 1, 3, 4]).reshape([1*33, N*33, 3])
-    x = np.kron(x, np.ones([2, 2, 1]))
-
-    PIL.Image.fromarray((x*255).astype('byte'), 'RGB').save(name)
+# def visualize(x,colormap,name):
+#
+#     N = len(x)
+#     assert(N <= 16)
+#
+#     x = colormap(x/np.abs(x).max())
+#
+#     # Create a mosaic and upsample
+#     x = x.reshape([1, N, 29, 29, 3])
+#     x = np.pad(x, ((0, 0), (0, 0), (2, 2), (2, 2), (0, 0)), 'constant', constant_values=1)
+#     x = x.transpose([0, 2, 1, 3, 4]).reshape([1*33, N*33, 3])
+#     x = np.kron(x, np.ones([2, 2, 1]))
+#
+#     PIL.Image.fromarray((x*255).astype('byte'), 'RGB').save(name)
 
 
 def plt_vector(x, colormap, num_headers):
@@ -83,4 +83,21 @@ def add_subplot(data, num_plots, plot_index, title, figure):
     # cbar.ax.set_yticklabels(['0', '> 1'])  # vertically oriented colorbar
     ax.set_title(title)
 
+def plot_data(data, title):
+    plt.figure(figsize=(6.4, 2.5))  # figuresize to make 16 headers plot look good
+    # plt.axis('scaled')
+    plt.imshow(data, interpolation='nearest', aspect='auto')
+    plt.title(title)
+    plt.tight_layout()
+
+
+def plotNNFilter(units):
+    filters = units.shape[3]
+    plt.figure(1, figsize=(20, 20))
+    n_columns = 6
+    n_rows = np.ceil(filters / n_columns) + 1
+    for i in range(filters):
+        plt.subplot(n_rows, n_columns, i+1)
+        plt.title('Filter ' + str(i))
+        plt.imshow(units[0, :, :, i], interpolation="nearest", cmap="gray")
 
