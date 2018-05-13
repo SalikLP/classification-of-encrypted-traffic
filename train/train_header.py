@@ -9,20 +9,16 @@ import os
 now = datetime.datetime.now()
 
 summaries_dir = '../tensorboard'
-hidden_units = 12
+hidden_units = 50
 acc_list = []
 num_headers_train = []
 num_headers = [16]
 for num_header in num_headers:
 
-    train_dirs = ['/home/mclrn/Data/LinuxChrome/{0}/'.format(num_header),
-                  '/home/mclrn/Data/WindowsFirefox/{0}/'.format(num_header),
-                  '/home/mclrn/Data/WindowsAndreas/{0}/'.format(num_header),
-                  '/home/mclrn/Data/WindowsSalik/{0}/'.format(num_header),
-                  ]
+    train_dirs = ['E:/Data/LinuxChrome/{}/'.format(num_header)]
 
     # test_dirs = ['/home/mclrn/Data/LinuxChrome/{0}/'.format(num_header)]
-    test_dirs = ['/home/mclrn/Data/WindowsChrome/{0}/'.format(num_header)]
+    test_dirs = ['E:/Data/LinuxChrome/{}/'.format(num_header)]
 
     trainstr = "train:"
     for traindir in train_dirs:
@@ -44,7 +40,7 @@ for num_header in num_headers:
     early_stop = es.EarlyStopping(patience=20, min_delta=0.05)
     subdir = "/{0}/{1}/{2}/".format(num_header, hidden_units, timestamp)
     input_size = num_header*54
-    data = dataset.read_data_sets(train_dirs, test_dirs, merge_data=True, one_hot=True,
+    data = dataset.read_data_sets(train_dirs, train_dirs, merge_data=True, one_hot=True,
                                   validation_size=0.1,
                                   test_size=0.1,
                                   balance_classes=False,
@@ -118,7 +114,7 @@ for num_header in num_headers:
     val_writer = tf.summary.FileWriter(summaries_dir + '/validation/' + subdir)
 
     # Training Loop
-    batch_size = 10
+    batch_size = 100
     max_epochs = 200
 
     valid_loss, valid_accuracy = [], []
@@ -205,14 +201,33 @@ for num_header in num_headers:
             y_true = tf.argmax(data.test.labels, axis=1).eval()
             y_true = [labels[i] for i in y_true]
             y_preds = [labels[i] for i in y_preds]
-            conf = metrics.confusion_matrix(y_true, y_preds, labels=labels)
+            nostream_dict = ['http', 'https']
+            y_stream_true = []
+            y_stream_preds = []
+            for i, v in enumerate(y_true):
+                pred = y_preds[i]
+                if v in nostream_dict:
+                    y_stream_true.append('NonStream')
+                else:
+                    y_stream_true.append('Stream')
+                if pred in nostream_dict:
+                    y_stream_preds.append('NonStream')
+                else:
+                    y_stream_preds.append('Stream')
+            stream_acc = len([v for i, v in enumerate(y_stream_preds) if v == y_stream_true[i]])/len(y_stream_true)
+            conf1 = metrics.confusion_matrix(y_true, y_preds, labels=labels)
+            conf2 = metrics.confusion_matrix(y_stream_true, y_stream_preds, labels=['NonStream', 'Stream'])
             report = metrics.classification_report(y_true, y_preds, labels=labels)
+            report2 = metrics.classification_report(y_stream_true, y_stream_preds, labels=['NonStream', 'Stream'])
 
         except KeyboardInterrupt:
             pass
     print(namestr)
-    utils.plot_confusion_matrix(conf, labels, save=True, title=namestr)
+    utils.plot_confusion_matrix(conf1, labels, save=False, title=namestr)
+    utils.plot_confusion_matrix(conf2, ['NonStream', 'Stream'], save=False, title="StreamNoStream_acc{}".format(stream_acc))
+    utils.show_plot()
     print(report)
+    print(report2)
 acc_list = list(map(float, acc_list))
 print(acc_list, num_headers_train)
 # utils.plot_metric_graph(train_size, acc_list, title="Datapoints vs. Accuracy", save=True)
