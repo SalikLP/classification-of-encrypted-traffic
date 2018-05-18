@@ -39,7 +39,7 @@ def ffn_layer(name, inputs, hidden_units, activation=tf.nn.relu, seed=None):
         # return layer
 
 
-def conv_layer_1d(name, inputs, num_filters=1, filter_size=(1,1), strides=1, activation=None):
+def conv_layer_1d(name, inputs, num_filters=1, filter_size=(1, 1), strides=1, activation=None):
     """"A simple function to create a 1D conv layer"""
     with tf.variable_scope(name):
         # TensorFlow operation for convolution
@@ -52,7 +52,7 @@ def conv_layer_1d(name, inputs, num_filters=1, filter_size=(1,1), strides=1, act
         return layer
 
 
-def conv_layer_2d(name, inputs, num_filters=1, filter_size=(1,1), strides=(1,1), activation=None):
+def conv_layer_2d(name, inputs, num_filters=1, filter_size=(1, 1), strides=(1,1), activation=None):
     """"A simple function to create a 2D conv layer"""
     with tf.variable_scope(name):
         # TensorFlow operation for convolution
@@ -75,7 +75,15 @@ def max_pool_layer(inputs, name, pool_size=(1, 1), strides=(1, 1), padding='same
                                         padding=padding)
         return layer
 
-
+def max_pool_layer1d(inputs, name, pool_size=(1, 1), strides=(1, 1), padding='same'):
+    """"A simple function to create a max pool layer"""
+    with tf.variable_scope(name):
+        # TensorFlow operation for max pooling
+        layer = tf.layers.max_pooling1d(inputs=inputs,
+                                        pool_size=pool_size,
+                                        strides=strides,
+                                        padding=padding)
+        return layer
 def dropout(inputs, keep_prob=1.0):
     with tf.name_scope('dropout'):
         # keep_prob = tf.placeholder(tf.float32)

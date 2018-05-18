@@ -12,8 +12,8 @@ from sklearn.metrics import accuracy_score
 import matplotlib.pyplot as plt
 seed = 0
 num_headers = 16
-dirs = ["C:/Users/salik/Documents/Data/LinuxChrome/{}/".format(num_headers),
-        "C:/Users/salik/Documents/Data/WindowsChrome/{}/".format(num_headers)]
+dirs = ["E:/Data/WindowsFirefox/{}/".format(num_headers),
+        "E:/Data/WindowsChrome/{}/".format(num_headers)]
 # dirs = ["E:/Data/h5/https/", "E:/Data/h5/netflix/"]
 # dirs = ["C:/Users/salik/Documents/Data/WindowsAndreas/{}/".format(num_headers)]
 # step 1: get the data
@@ -49,8 +49,8 @@ for data in dataframes:
     label_encoder = LabelEncoder()
     y = label_encoder.fit_transform(y)
     ys.append(y)
-class_labels1 = ["Linux " + x for x in class_labels]
-class_labels2 = ["Windows " + x for x in class_labels]
+class_labels1 = ["Firefox " + x for x in class_labels]
+class_labels2 = ["Chrome " + x for x in class_labels]
 # step 5: split the data into training set and test set
 test_percentage = 0.1
 x_tests = []
