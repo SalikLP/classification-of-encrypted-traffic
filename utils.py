@@ -385,6 +385,54 @@ def plot_metric_graph(x_list, y_list, x_label="Datapoints", y_label="Accuracy",
     plt.draw()
     # plt.gcf().clear()
 
+def plot_class_ROC(fpr, tpr, roc_auc, class_idx, labels):
+    from matplotlib import rcParams
+    # Make room for xlabel which is otherwise cut off
+    rcParams.update({'figure.autolayout': True})
+    plt.figure()
+    lw = 2
+    plt.plot(fpr[class_idx], tpr[class_idx], color='darkorange',
+             lw=lw, label='ROC curve (area = %0.2f)' % roc_auc[class_idx])
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic of class {}'.format(labels[class_idx]))
+    plt.legend(loc="lower right")
+    plt.tight_layout()
+
+def plot_multi_ROC(fpr, tpr, roc_auc, num_classes, labels):
+    from matplotlib import rcParams
+    # Make room for xlabel which is otherwise cut off
+    rcParams.update({'figure.autolayout': True})
+    # Plot all ROC curves
+    plt.figure()
+    lw = 2
+    plt.plot(fpr["micro"], tpr["micro"],
+             label='micro-average ROC curve (area = {0:0.2f})'
+                   ''.format(roc_auc["micro"]),
+             color='deeppink', linestyle=':', linewidth=4)
+
+    plt.plot(fpr["macro"], tpr["macro"],
+             label='macro-average ROC curve (area = {0:0.2f})'
+                   ''.format(roc_auc["macro"]),
+             color='navy', linestyle=':', linewidth=4)
+    color_map = {0: '#487fff', 1: '#2ee3ff', 2: '#4eff4e', 3: '#ffca43', 4: '#ff365e', 5: '#d342ff', 6: '#626663'}
+    # colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
+    for i in range(num_classes):
+        plt.plot(fpr[i], tpr[i], color=color_map[i], lw=lw,
+                 label='ROC curve of {0} (area = {1:0.2f})'
+                       ''.format(labels[i], roc_auc[i]))
+
+    plt.plot([0, 1], [0, 1], 'k--', lw=lw)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic of all classes')
+    plt.legend(loc="lower right")
+    plt.tight_layout()
 
 def show_plot():
     plt.show()

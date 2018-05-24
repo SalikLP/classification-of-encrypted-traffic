@@ -3,19 +3,21 @@ from tf import tf_utils as tfu, confusionmatrix as conf, dataset, early_stopping
 import numpy as np
 import datetime
 from sklearn import metrics
+# from sklearn.metrics import roc_curve, auc
 import utils
 import os
+from scipy import interp
 
 now = datetime.datetime.now()
 
 summaries_dir = '../tensorboard'
 
 # hidden_units = 12
-units = [5]
+units = [12]
 acc_list = []
 num_headers_train = []
 hidden_units_train = []
-num_headers = [8]
+num_headers = [16]
 for num_header in num_headers:
     for hidden_units in units:
         hidden_units_train.append(hidden_units)
@@ -132,7 +134,7 @@ for num_header in num_headers:
         val_writer = tf.summary.FileWriter(summaries_dir + '/validation/' + subdir)
 
         # Training Loop
-        batch_size = 10
+        batch_size = 100
         max_epochs = 200
 
         valid_loss, valid_accuracy = [], []
@@ -214,6 +216,34 @@ for num_header in num_headers:
                 acc_list.append("{:.3f}".format(np.mean(test_accuracy)))
                 saver.save(sess, save_dir+'header_{0}_{1}_units.ckpt'.format(num_header, hidden_units))
                 feed_dict_test = {x_pl: data.test.payloads, y_pl: data.test.labels}
+                y_preds = sess.run(fetches=y, feed_dict=feed_dict_test)
+                y_true = data.test.labels
+                # Compute ROC curve and ROC area for each class
+                fpr = dict()
+                tpr = dict()
+                roc_auc = dict()
+                for i in range(num_classes):
+                    fpr[i], tpr[i], _ = metrics.roc_curve(y_true[:, i], y_preds[:, i])
+                    roc_auc[i] = metrics.auc(fpr[i], tpr[i])
+                # Compute micro-average ROC curve and ROC area
+                fpr["micro"], tpr["micro"], _ = metrics.roc_curve(y_true.ravel(), y_preds.ravel())
+                roc_auc["micro"] = metrics.auc(fpr["micro"], tpr["micro"])
+                # Compute macro-average ROC curve and ROC area
+                # First aggregate all false positive rates
+                all_fpr = np.unique(np.concatenate([fpr[i] for i in range(num_classes)]))
+                # Then interpolate all ROC curves at this points
+                mean_tpr = np.zeros_like(all_fpr)
+                for i in range(num_classes):
+                    mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+                # Finally average it and compute AUC
+                mean_tpr /= num_classes
+                fpr["macro"] = all_fpr
+                tpr["macro"] = mean_tpr
+                roc_auc["macro"] = metrics.auc(fpr["macro"], tpr["macro"])
+                for i in range(num_classes):
+                    utils.plot_class_ROC(fpr, tpr, roc_auc, i, labels)
+                utils.plot_multi_ROC(fpr, tpr, roc_auc, num_classes, labels)
+
                 y_preds = sess.run(fetches=y_, feed_dict=feed_dict_test)
                 y_true = tf.argmax(data.test.labels, axis=1).eval()
                 y_true = [labels[i] for i in y_true]
