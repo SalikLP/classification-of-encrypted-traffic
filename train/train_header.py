@@ -4,41 +4,8 @@ import numpy as np
 import datetime
 from sklearn import metrics
 from sklearn.preprocessing import label_binarize
-# from sklearn.metrics import roc_curve, auc
 import utils
 import os
-from scipy import interp
-
-
-def roc(y_true, y_preds, num_classes, labels, micro=True, macro=True):
-    # Compute ROC curve and ROC area for each class
-    fpr = dict()
-    tpr = dict()
-    roc_auc = dict()
-    for i in range(num_classes):
-        fpr[i], tpr[i], _ = metrics.roc_curve(y_true[:, i], y_preds[:, i])
-        roc_auc[i] = metrics.auc(fpr[i], tpr[i])
-    if micro:
-        # Compute micro-average ROC curve and ROC area
-        fpr["micro"], tpr["micro"], _ = metrics.roc_curve(y_true.ravel(), y_preds.ravel())
-        roc_auc["micro"] = metrics.auc(fpr["micro"], tpr["micro"])
-    if macro:
-        # Compute macro-average ROC curve and ROC area
-        # First aggregate all false positive rates
-        all_fpr = np.unique(np.concatenate([fpr[i] for i in range(num_classes)]))
-        # Then interpolate all ROC curves at this points
-        mean_tpr = np.zeros_like(all_fpr)
-        for i in range(num_classes):
-            mean_tpr += interp(all_fpr, fpr[i], tpr[i])
-        # Finally average it and compute AUC
-        mean_tpr /= num_classes
-        fpr["macro"] = all_fpr
-        tpr["macro"] = mean_tpr
-        roc_auc["macro"] = metrics.auc(fpr["macro"], tpr["macro"])
-    for i in range(num_classes):
-        utils.plot_class_ROC(fpr, tpr, roc_auc, i, labels)
-    utils.plot_multi_ROC(fpr, tpr, roc_auc, num_classes, labels, micro, macro)
-
 
 now = datetime.datetime.now()
 
@@ -237,9 +204,11 @@ for num_header in num_headers:
                 acc_list.append("{:.3f}".format(np.mean(test_accuracy)))
                 saver.save(sess, save_dir+'header_{0}_{1}_units.ckpt'.format(num_header, hidden_units))
                 feed_dict_test = {x_pl: data.test.payloads, y_pl: data.test.labels}
+                # Create ROC curve for all classes
                 y_preds = sess.run(fetches=y, feed_dict=feed_dict_test)
                 y_true = data.test.labels
-                roc(y_true, y_preds, num_classes, labels, micro=False, macro=False)
+                utils.plot_ROC(y_true, y_preds, num_classes, labels, micro=False, macro=False)
+                # Compute different metrics for confusionmatrix and more
                 y_preds = sess.run(fetches=y_, feed_dict=feed_dict_test)
                 y_true = tf.argmax(data.test.labels, axis=1).eval()
                 y_true = [labels[i] for i in y_true]
@@ -266,17 +235,8 @@ for num_header in num_headers:
                 y_stream_true1 = label_binarize(y_stream_true, classes=['non-streaming', 'streaming'])
                 y_stream_preds1 = label_binarize(y_stream_preds, classes=['non-streaming', 'streaming'])
                 n_classes = y_stream_true1.shape[1]
-
-                roc(y_stream_true1, y_stream_preds1, n_classes, ['non-streaming', 'streaming'], micro=False, macro=False)
-
-
-
-
-
-
-
-
-
+                # Stream/non-stream ROC curve
+                utils.plot_ROC(y_stream_true1, y_stream_preds1, n_classes, ['non-streaming', 'streaming'], micro=False, macro=False)
 
                 conf1 = metrics.confusion_matrix(y_true, y_preds, labels=labels)
                 conf2 = metrics.confusion_matrix(y_stream_true, y_stream_preds, labels=['non-streaming', 'streaming'])

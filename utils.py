@@ -1,5 +1,5 @@
 import multiprocessing
-
+from sklearn import metrics
 from scapy.all import *
 import matplotlib.pyplot as plt
 import os
@@ -7,6 +7,7 @@ import numpy as np
 import time
 import pandas as pd
 import glob
+from scipy import interp
 
 
 def filter_pcap_by_ip(dir, filename, ip_list, label):
@@ -434,6 +435,37 @@ def plot_multi_ROC(fpr, tpr, roc_auc, num_classes, labels, micro=True, macro=Tru
     plt.title('Receiver operating characteristic of all classes')
     plt.legend(loc="lower right")
     plt.tight_layout()
+
+
+def plot_ROC(y_true, y_preds, num_classes, labels, micro=True, macro=True):
+    # Compute ROC curve and ROC area for each class
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(num_classes):
+        fpr[i], tpr[i], _ = metrics.roc_curve(y_true[:, i], y_preds[:, i])
+        roc_auc[i] = metrics.auc(fpr[i], tpr[i])
+    if micro:
+        # Compute micro-average ROC curve and ROC area
+        fpr["micro"], tpr["micro"], _ = metrics.roc_curve(y_true.ravel(), y_preds.ravel())
+        roc_auc["micro"] = metrics.auc(fpr["micro"], tpr["micro"])
+    if macro:
+        # Compute macro-average ROC curve and ROC area
+        # First aggregate all false positive rates
+        all_fpr = np.unique(np.concatenate([fpr[i] for i in range(num_classes)]))
+        # Then interpolate all ROC curves at this points
+        mean_tpr = np.zeros_like(all_fpr)
+        for i in range(num_classes):
+            mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+        # Finally average it and compute AUC
+        mean_tpr /= num_classes
+        fpr["macro"] = all_fpr
+        tpr["macro"] = mean_tpr
+        roc_auc["macro"] = metrics.auc(fpr["macro"], tpr["macro"])
+    for i in range(num_classes):
+        plot_class_ROC(fpr, tpr, roc_auc, i, labels)
+    plot_multi_ROC(fpr, tpr, roc_auc, num_classes, labels, micro, macro)
+
 
 def show_plot():
     plt.show()
