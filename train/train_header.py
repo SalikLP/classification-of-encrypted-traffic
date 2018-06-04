@@ -3,42 +3,63 @@ from tf import tf_utils as tfu, confusionmatrix as conf, dataset, early_stopping
 import numpy as np
 import datetime
 from sklearn import metrics
+from sklearn.preprocessing import label_binarize
 # from sklearn.metrics import roc_curve, auc
 import utils
 import os
 from scipy import interp
+
+
+def roc(y_true, y_preds, num_classes, labels, micro=True, macro=True):
+    # Compute ROC curve and ROC area for each class
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(num_classes):
+        fpr[i], tpr[i], _ = metrics.roc_curve(y_true[:, i], y_preds[:, i])
+        roc_auc[i] = metrics.auc(fpr[i], tpr[i])
+    if micro:
+        # Compute micro-average ROC curve and ROC area
+        fpr["micro"], tpr["micro"], _ = metrics.roc_curve(y_true.ravel(), y_preds.ravel())
+        roc_auc["micro"] = metrics.auc(fpr["micro"], tpr["micro"])
+    if macro:
+        # Compute macro-average ROC curve and ROC area
+        # First aggregate all false positive rates
+        all_fpr = np.unique(np.concatenate([fpr[i] for i in range(num_classes)]))
+        # Then interpolate all ROC curves at this points
+        mean_tpr = np.zeros_like(all_fpr)
+        for i in range(num_classes):
+            mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+        # Finally average it and compute AUC
+        mean_tpr /= num_classes
+        fpr["macro"] = all_fpr
+        tpr["macro"] = mean_tpr
+        roc_auc["macro"] = metrics.auc(fpr["macro"], tpr["macro"])
+    for i in range(num_classes):
+        utils.plot_class_ROC(fpr, tpr, roc_auc, i, labels)
+    utils.plot_multi_ROC(fpr, tpr, roc_auc, num_classes, labels, micro, macro)
+
 
 now = datetime.datetime.now()
 
 summaries_dir = '../tensorboard'
 
 # hidden_units = 12
-units = [12]
+units = [5]
 acc_list = []
 num_headers_train = []
 hidden_units_train = []
-num_headers = [16]
+num_headers = [8]
 for num_header in num_headers:
     for hidden_units in units:
         hidden_units_train.append(hidden_units)
-
-        # train_dirs = ['/home/mclrn/Data/LinuxChrome/{0}/'.format(num_header),
-        #               '/home/mclrn/Data/WindowsFirefox/{0}/'.format(num_header),
-        #               '/home/mclrn/Data/WindowsAndreas/{0}/'.format(num_header),
-        #               '/home/mclrn/Data/WindowsSalik/{0}/'.format(num_header),
-        #               ]
         train_dirs = ["E:/Data/LinuxChrome/{}/".format(num_header),
                       "E:/Data/WindowsSalik/{}/".format(num_header),
                       "E:/Data/WindowsAndreas/{}/".format(num_header),
-                      "E:/Data/WindowsFirefox/{}/".format(num_header),
+                      "E:/Data/WindowsFirefox/{}/".format(num_header)
                       ]
-        # '/home/mclrn/Data/WindowsFirefox/{0}/'.format(num_header),
-        # '/home/mclrn/Data/WindowsAndreas/{0}/'.format(num_header),
-        # '/home/mclrn/Data/WindowsSalik/{0}/'.format(num_header),
-        # ]
-        # test_dirs = ["E:/Data/WindowsSalik/{}/".format(num_header),]
-        test_dirs = [ "E:/Data/WindowsChrome/{}/".format(num_header),]
-        # test_dirs = ["E:/Data/WindowsAndreas/{}/".format(num_header),]
+
+        test_dirs = ["E:/Data/WindowsChrome/{}/".format(num_header)]
 
         trainstr = "train:"
         for traindir in train_dirs:
@@ -218,32 +239,7 @@ for num_header in num_headers:
                 feed_dict_test = {x_pl: data.test.payloads, y_pl: data.test.labels}
                 y_preds = sess.run(fetches=y, feed_dict=feed_dict_test)
                 y_true = data.test.labels
-                # Compute ROC curve and ROC area for each class
-                fpr = dict()
-                tpr = dict()
-                roc_auc = dict()
-                for i in range(num_classes):
-                    fpr[i], tpr[i], _ = metrics.roc_curve(y_true[:, i], y_preds[:, i])
-                    roc_auc[i] = metrics.auc(fpr[i], tpr[i])
-                # Compute micro-average ROC curve and ROC area
-                fpr["micro"], tpr["micro"], _ = metrics.roc_curve(y_true.ravel(), y_preds.ravel())
-                roc_auc["micro"] = metrics.auc(fpr["micro"], tpr["micro"])
-                # Compute macro-average ROC curve and ROC area
-                # First aggregate all false positive rates
-                all_fpr = np.unique(np.concatenate([fpr[i] for i in range(num_classes)]))
-                # Then interpolate all ROC curves at this points
-                mean_tpr = np.zeros_like(all_fpr)
-                for i in range(num_classes):
-                    mean_tpr += interp(all_fpr, fpr[i], tpr[i])
-                # Finally average it and compute AUC
-                mean_tpr /= num_classes
-                fpr["macro"] = all_fpr
-                tpr["macro"] = mean_tpr
-                roc_auc["macro"] = metrics.auc(fpr["macro"], tpr["macro"])
-                for i in range(num_classes):
-                    utils.plot_class_ROC(fpr, tpr, roc_auc, i, labels)
-                utils.plot_multi_ROC(fpr, tpr, roc_auc, num_classes, labels)
-
+                roc(y_true, y_preds, num_classes, labels, micro=False, macro=False)
                 y_preds = sess.run(fetches=y_, feed_dict=feed_dict_test)
                 y_true = tf.argmax(data.test.labels, axis=1).eval()
                 y_true = [labels[i] for i in y_true]
@@ -256,32 +252,51 @@ for num_header in num_headers:
                 for i, v in enumerate(y_true):
                     pred = y_preds[i]
                     if v in nostream_dict:
-                        y_stream_true.append('NonStream')
+                        y_stream_true.append('non-streaming')
                     else:
-                        y_stream_true.append('Stream')
+                        y_stream_true.append('streaming')
                     if pred in nostream_dict:
-                        y_stream_preds.append('NonStream')
+                        y_stream_preds.append('non-streaming')
                     else:
-                        y_stream_preds.append('Stream')
+                        y_stream_preds.append('streaming')
                 stream_acc = len([v for i, v in enumerate(y_stream_preds) if v == y_stream_true[i]]) / len(
                     y_stream_true)
+
+                # Binarize the output
+                y_stream_true1 = label_binarize(y_stream_true, classes=['non-streaming', 'streaming'])
+                y_stream_preds1 = label_binarize(y_stream_preds, classes=['non-streaming', 'streaming'])
+                n_classes = y_stream_true1.shape[1]
+
+                roc(y_stream_true1, y_stream_preds1, n_classes, ['non-streaming', 'streaming'], micro=False, macro=False)
+
+
+
+
+
+
+
+
+
+
                 conf1 = metrics.confusion_matrix(y_true, y_preds, labels=labels)
-                conf2 = metrics.confusion_matrix(y_stream_true, y_stream_preds, labels=['NonStream', 'Stream'])
+                conf2 = metrics.confusion_matrix(y_stream_true, y_stream_preds, labels=['non-streaming', 'streaming'])
                 report = metrics.classification_report(y_true, y_preds, labels=labels)
-                report2 = metrics.classification_report(y_stream_true, y_stream_preds, labels=['NonStream', 'Stream'])
+                report2 = metrics.classification_report(y_stream_true, y_stream_preds, labels=['non-streaming', 'streaming'])
 
             except KeyboardInterrupt:
                 pass
         print(namestr)
         utils.plot_confusion_matrix(conf1, labels, save=False, title=namestr)
-        utils.plot_confusion_matrix(conf2, ['NonStream', 'Stream'], save=False,
+        utils.plot_confusion_matrix(conf2, ['non-streaming', 'streaming'], save=False,
                                     title="StreamNoStream_acc{}".format(stream_acc))
         print(report)
         print(report2)
-        utils.plot_metric_graph(x_list=epochs, y_list=valid_accuracy, save=False, x_label="epochs", y_label="Accuracy", title="Accuracy")
-        utils.plot_metric_graph(x_list=epochs, y_list=valid_loss, save=False,  x_label="epochs", y_label="loss", title="Loss")
+        # utils.plot_metric_graph(x_list=epochs, y_list=valid_accuracy, save=False, x_label="epochs", y_label="Accuracy", title="Accuracy")
+        # utils.plot_metric_graph(x_list=epochs, y_list=valid_loss, save=False,  x_label="epochs", y_label="loss", title="Loss")
         # utils.plot_confusion_matrix(conf, labels, save=False, title=namestr)
         utils.show_plot()
 
 acc_list = list(map(float, acc_list))
 print(acc_list, hidden_units_train)
+
+

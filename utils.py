@@ -402,19 +402,20 @@ def plot_class_ROC(fpr, tpr, roc_auc, class_idx, labels):
     plt.legend(loc="lower right")
     plt.tight_layout()
 
-def plot_multi_ROC(fpr, tpr, roc_auc, num_classes, labels):
+def plot_multi_ROC(fpr, tpr, roc_auc, num_classes, labels, micro=True, macro=True):
     from matplotlib import rcParams
     # Make room for xlabel which is otherwise cut off
     rcParams.update({'figure.autolayout': True})
     # Plot all ROC curves
     plt.figure()
     lw = 2
-    plt.plot(fpr["micro"], tpr["micro"],
+    if micro:
+        plt.plot(fpr["micro"], tpr["micro"],
              label='micro-average ROC curve (area = {0:0.2f})'
                    ''.format(roc_auc["micro"]),
              color='deeppink', linestyle=':', linewidth=4)
-
-    plt.plot(fpr["macro"], tpr["macro"],
+    if macro:
+        plt.plot(fpr["macro"], tpr["macro"],
              label='macro-average ROC curve (area = {0:0.2f})'
                    ''.format(roc_auc["macro"]),
              color='navy', linestyle=':', linewidth=4)
