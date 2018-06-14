@@ -3,14 +3,15 @@ This repository contains the code used and developed during a master thesis at D
 Professor [Ole Winther](http://cogsys.imm.dtu.dk/staff/winther/) has been supervisor for this master thesis.  
 Alex Omø Agerholm from [Napatech](https://www.napatech.com/) has been co-supervisor for this project.
 
-In this thesis we examine and evaluate different ways of classifying encrypted network traffic using neural networks. For this purpose we create a dataset with a streaming/non-streaming focus. The dataset comprises seven different classes, five streaming and two non-streaming.  
+In this thesis we examined and evaluated different ways of classifying encrypted network traffic by use of neural networks. For this purpose we created a dataset with a streaming/non-streaming focus. The dataset comprises seven different classes, five streaming and two non-streaming.
 The thesis serves as a preliminary proof-of-concept for Napatech A/S. 
 
-The most desirable approach for Napatech is to classify individual packets upon arrival. Our experiments show that this approach is infeasible due to the content being encrypted and therefore without any distinguishable information. We therefore propose a novel approach where the unencrypted parts of network traffic, namely the headers are utilized. This is done by concatenating the initial headers from a session thus forming a signature datapoint as shown in the following figure: 
+We propose a novel approach where the unencrypted parts of network traffic, namely the headers are utilized. This is done by concatenating the initial headers from a session thus forming a signature datapoint as shown in the following figure: 
 
 <img src="https://saliklp.github.io/plots/Header-datapoint.png" alt="Header datapoint" width="50%">
 
-We explored the dataset by running t-SNE on the concatenated headers dataset. As can be seen in the figure below the classes  
+The datasets created by use of the first 8 and 16 headers are available in the datasets folder in this repository.
+We explored the dataset by running t-SNE on the concatenated headers dataset. As can be seen in the t-SNE plot below, which shows all the individual datasets merged, it seems possible to perform classification of individual classes.
 
 <img src="https://saliklp.github.io/plots/t-SNE_16headers_all_merged_perplexity30.png" alt="t-SNE plot" width="50%">
 
