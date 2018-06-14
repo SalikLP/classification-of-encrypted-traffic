@@ -17,8 +17,6 @@ We explored the dataset by running t-SNE on the concatenated headers dataset. As
 
 In experiments using the header-based approach we achieve very promising results, showing that a simple neural network with a single hidden layer of less than 50 units, can predict the individual classes with an accuracy of 96.4\% and an AUC of 0.99 to 1.00 for the individual classes, as shown in the following figures.
 
-<img src="https://saliklp.github.io/plots/trainAllMerged_acc964.png" alt="Confusion matrix of all 7 classes" width="49%">
-
-<img src="https://saliklp.github.io/plots/ROC_16header_12unit_all_.png" alt="ROC Plot" width="49.4%">
+<img src="https://saliklp.github.io/plots/trainAllMerged_acc964.png" alt="Confusion matrix of all 7 classes" width="49%"> <img src="https://saliklp.github.io/plots/ROC_16header_12unit_all_.png" alt="ROC Plot" width="49.4%">
 
 The thesis hereby provides a solution to network traffic classification using the unencrypted headers.
